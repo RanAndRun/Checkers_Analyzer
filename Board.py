@@ -1,3 +1,4 @@
+import pygame
 from Tile import Tile
 from Pawn import Pawn
 from Enums import EColor
@@ -13,9 +14,7 @@ class Board:
     get_pawn_from_tile = {}
     tiles = []
 
-
-
-    def __init__ (self):
+    def __init__(self):
         # start game board
         screen.blit(self.board_image, (0, 0))
         self.tiles = self.create_tiles()
@@ -28,7 +27,7 @@ class Board:
         # self.pieces_list[0].append
         # self.get_pawn_from_tile[self.tiles[2][2]] = King(self.tiles[2][2], color=EColor.black)
 
-    def draw (self):
+    def draw(self):
         screen.blit(self.board_image, (0, 0))
         for tile_x in range(board_size):
             for tile_y in range(board_size):
@@ -37,7 +36,7 @@ class Board:
                 if pawn and pawn.is_alive():
                     self.get_pawn_from_tile[curr_tile].draw()
 
-    def create_tiles (self):
+    def create_tiles(self):
         tiles = [[None for x in range(board_size)] for y in range(board_size)]
 
         x_point = 0
@@ -52,7 +51,7 @@ class Board:
 
         return tiles
 
-    def starting_position (self):
+    def starting_position(self):
         self.get_pawn_from_tile = {}
         for row in self.tiles:
             for tile in row:
@@ -72,19 +71,26 @@ class Board:
                 self.get_pawn_from_tile[self.tiles[row][column]] = curr
                 self.pieces_list[1].append(curr)
 
-    def where_can_move (self, tile: Tile) -> list[(Tile, bool)]:
+    def where_can_move(self, tile: Tile) -> list[(Tile, bool)]:
         piece = self.get_pawn_from_tile[tile]
         x, y = tile.get_location()
         possible_tiles = []
 
-        is_tile_not_taken = lambda x, y: self.is_location_inside_board(x, y) and self.get_pawn_from_tile[
-            self.tiles[y][x]] is None
-        is_opponent_pawn_on_tile = lambda x, y, color: self.get_pawn_from_tile[self.tiles[y][x]] and \
-                                                       self.get_pawn_from_tile[self.tiles[y][x]].color == EColor(
-            3 - piece.color.value)
+        is_tile_not_taken = (
+            lambda x, y: self.is_location_inside_board(x, y)
+            and self.get_pawn_from_tile[self.tiles[y][x]] is None
+        )
+        is_opponent_pawn_on_tile = lambda x, y, color: self.get_pawn_from_tile[
+            self.tiles[y][x]
+        ] and self.get_pawn_from_tile[self.tiles[y][x]].color == EColor(
+            3 - piece.color.value
+        )
 
         if type(piece) == Pawn and piece.alive:
-            directions = ([(1, 1), (-1, 1)], [(1, -1), (-1, -1)])  # White, Black, Right, Left
+            directions = (
+                [(1, 1), (-1, 1)],
+                [(1, -1), (-1, -1)],
+            )  # White, Black, Right, Left
             directions = directions[piece.color.value - 1]
 
             for direction in directions:
@@ -97,9 +103,13 @@ class Board:
                 if is_tile_not_taken(new_x, new_y):
                     possible_tiles.append((self.tiles[new_y][new_x], None))
 
-
         if type(piece) == King and piece.alive:
-            directions = [(1, 1), (-1, 1), (1, -1), (-1, -1)]  # Up-right, Up-left, Down-right, Down-left
+            directions = [
+                (1, 1),
+                (-1, 1),
+                (1, -1),
+                (-1, -1),
+            ]  # Up-right, Up-left, Down-right, Down-left
 
             for direction in directions:
                 dx, dy = direction
@@ -113,22 +123,32 @@ class Board:
                         break
 
         return possible_tiles
-    
-    def where_can_jump (self, tile: Tile):
+
+    def where_can_jump(self, tile: Tile):
         piece = self.get_pawn_from_tile[tile]
         x, y = tile.get_location()
         possible_jumps = []
 
         # might be able to delete IsLocationInsideBoard from isTileNotTaken
-        is_tile_not_taken = lambda x, y: self.is_location_inside_board(x, y) and self.get_pawn_from_tile[
-            self.tiles[y][x]] is None
-        is_tile_taken = lambda x, y: self.is_location_inside_board(x, y) and self.get_pawn_from_tile[
-            self.tiles[y][x]] is not None
-        is_opponent_pawn_on_tile = lambda x, y, color: self.get_pawn_from_tile[self.tiles[y][x]] and \
-                                                    self.get_pawn_from_tile[self.tiles[y][x]].color == EColor(3 - piece.color.value)
+        is_tile_not_taken = (
+            lambda x, y: self.is_location_inside_board(x, y)
+            and self.get_pawn_from_tile[self.tiles[y][x]] is None
+        )
+        is_tile_taken = (
+            lambda x, y: self.is_location_inside_board(x, y)
+            and self.get_pawn_from_tile[self.tiles[y][x]] is not None
+        )
+        is_opponent_pawn_on_tile = lambda x, y, color: self.get_pawn_from_tile[
+            self.tiles[y][x]
+        ] and self.get_pawn_from_tile[self.tiles[y][x]].color == EColor(
+            3 - piece.color.value
+        )
 
         if type(piece) == Pawn and piece.alive:
-            directions = ([(1, 1), (-1, 1)], [(1, -1), (-1, -1)])  # White, Black, Right, Left
+            directions = (
+                [(1, 1), (-1, 1)],
+                [(1, -1), (-1, -1)],
+            )  # White, Black, Right, Left
             directions = directions[piece.color.value - 1]
 
             for direction in directions:
@@ -136,14 +156,25 @@ class Board:
 
                 new_x, new_y = x + dx, y + dy
 
-                if is_tile_taken(new_x, new_y) and is_opponent_pawn_on_tile(new_x, new_y, piece.color):
-                    #found is here to tell that player must eat now. can be eliminated, if possible_jumps not None, must jump.
+                if is_tile_taken(new_x, new_y) and is_opponent_pawn_on_tile(
+                    new_x, new_y, piece.color
+                ):
+                    # found is here to tell that player must eat now. can be eliminated, if possible_jumps not None, must jump.
                     if is_tile_not_taken(new_x + dx, new_y + dy):
                         possible_jumps.append(
-                            (self.tiles[new_y + dy][new_x + dx], self.get_pawn_from_tile[self.tiles[new_y][new_x]]))
+                            (
+                                self.tiles[new_y + dy][new_x + dx],
+                                self.get_pawn_from_tile[self.tiles[new_y][new_x]],
+                            )
+                        )
 
         if type(piece) == King and piece.alive:
-            directions = [(1, 1), (-1, 1), (1, -1), (-1, -1)]  # Up-right, Up-left, Down-right, Down-left
+            directions = [
+                (1, 1),
+                (-1, 1),
+                (1, -1),
+                (-1, -1),
+            ]  # Up-right, Up-left, Down-right, Down-left
 
             for direction in directions:
                 dx, dy = direction
@@ -151,36 +182,42 @@ class Board:
                 for step in range(1, board_size):
                     new_x, new_y = x + step * dx, y + step * dy
 
-                    if is_tile_taken(new_x, new_y) and is_opponent_pawn_on_tile(new_x, new_y, piece.color) or found and is_tile_not_taken(new_x, new_y):
+                    if (
+                        is_tile_taken(new_x, new_y)
+                        and is_opponent_pawn_on_tile(new_x, new_y, piece.color)
+                        or found
+                        and is_tile_not_taken(new_x, new_y)
+                    ):
                         if not found:
                             found = self.get_pawn_from_tile[self.tiles[new_y][new_x]]
                         if is_tile_not_taken(new_x + dx, new_y + dy):
-                            possible_jumps.append((self.tiles[new_y + dy][new_x + dx], found))
+                            possible_jumps.append(
+                                (self.tiles[new_y + dy][new_x + dx], found)
+                            )
                         else:
                             break
 
-
         return possible_jumps
-    
-    def jump_is_possible(self, color: EColor) -> bool :
+
+    def jump_is_possible(self, color: EColor) -> bool:
         for piece in self.pieces_list[color.value - 1]:
             if self.where_can_jump(piece.tile) != []:
                 return True
         return False
 
-    
     def has_more_jumps(self, tile):
         return self.where_can_jump(tile) != []
 
-
-    def move (self, from_tile: Tile, to_tile: Tile, hasJumped: bool):
-        jump_is_possible = self.jump_is_possible(self.get_pawn_from_tile[from_tile].color)
-        possible_moves = self.where_can_jump(from_tile)        
+    def move(self, from_tile: Tile, to_tile: Tile, hasJumped: bool):
+        jump_is_possible = self.jump_is_possible(
+            self.get_pawn_from_tile[from_tile].color
+        )
+        possible_moves = self.where_can_jump(from_tile)
         if not hasJumped and not jump_is_possible:
             possible_moves += self.where_can_move(from_tile)
         hasJumped = False
         for possible_move in possible_moves:
-            if possible_move[0] == to_tile:   
+            if possible_move[0] == to_tile:
                 piece = self.get_pawn_from_tile[from_tile]
                 if piece:
                     piece.move(to_tile)
@@ -192,16 +229,20 @@ class Board:
                     hasJumped = True
                     self.get_pawn_from_tile[possible_move[1].tile] = None
                     possible_move[1].killed()
-                    self.pieces_list[possible_move[1].color.value - 1].remove(possible_move[1])
+                    self.pieces_list[possible_move[1].color.value - 1].remove(
+                        possible_move[1]
+                    )
         return hasJumped
 
-    def upgrade_to_king (self, tile: Tile):
+    def upgrade_to_king(self, tile: Tile):
         piece = self.get_pawn_from_tile[tile]
         if piece is King:
             return
 
-        if piece.color == EColor.white and tile.row != board_size - 1: return
-        if piece.color == EColor.black and tile.row != 0: return
+        if piece.color == EColor.white and tile.row != board_size - 1:
+            return
+        if piece.color == EColor.black and tile.row != 0:
+            return
 
         king = King(tile, piece.color)
         self.get_pawn_from_tile[tile] = king
@@ -210,8 +251,10 @@ class Board:
 
         piece.alive = False
 
-    def show_avilable_moves (self, from_tile: Tile, has_jumped: bool):
-        jump_is_possible = self.jump_is_possible(self.get_pawn_from_tile[from_tile].color) #bool
+    def show_avilable_moves(self, from_tile: Tile, has_jumped: bool):
+        jump_is_possible = self.jump_is_possible(
+            self.get_pawn_from_tile[from_tile].color
+        )  # bool
 
         possible_tiles = self.where_can_jump(from_tile)
         if not has_jumped and not jump_is_possible:
@@ -221,13 +264,13 @@ class Board:
             tile = currTuple[0]
             tile.glow_yellow()
 
-    def get_tile_from_location (self, x, y) -> Tile:
+    def get_tile_from_location(self, x, y) -> Tile:
         return self.tiles[y][x]
 
-    def is_location_inside_board (self, x, y):
+    def is_location_inside_board(self, x, y):
         return 0 <= x < len(self.tiles) and 0 <= y < len(self.tiles[0])
 
-    def get_tile_at_pixel (self, mouse_x, mouse_y):
+    def get_tile_at_pixel(self, mouse_x, mouse_y):
         for x_tile in range(board_size):
             for y_tile in range(board_size):
                 currTile = self.get_tile_from_location(x_tile, y_tile)
