@@ -1,8 +1,9 @@
 import pygame
+import os
 from Tile import Tile
 from Pawn import Pawn
 from Enums import EColor
-from Main import *
+from Main import window_height, board_size, window_width, board_size
 from King import King
 
 
@@ -208,13 +209,17 @@ class Board:
     def has_more_jumps(self, tile):
         return self.where_can_jump(tile) != []
 
-    def move(self, from_tile: Tile, to_tile: Tile, hasJumped: bool):
+    def every_move_possible(self, from_tile: Tile, hasJumped: bool):
         jump_is_possible = self.jump_is_possible(
             self.get_pawn_from_tile[from_tile].color
         )
         possible_moves = self.where_can_jump(from_tile)
         if not hasJumped and not jump_is_possible:
             possible_moves += self.where_can_move(from_tile)
+        return possible_moves
+
+    def move(self, from_tile: Tile, to_tile: Tile, hasJumped: bool):
+        possible_moves = self.every_move_possible(from_tile, hasJumped)
         hasJumped = False
         for possible_move in possible_moves:
             if possible_move[0] == to_tile:
@@ -252,13 +257,7 @@ class Board:
         piece.alive = False
 
     def show_avilable_moves(self, from_tile: Tile, has_jumped: bool):
-        jump_is_possible = self.jump_is_possible(
-            self.get_pawn_from_tile[from_tile].color
-        )  # bool
-
-        possible_tiles = self.where_can_jump(from_tile)
-        if not has_jumped and not jump_is_possible:
-            possible_tiles += self.where_can_move(from_tile)
+        possible_tiles = self.every_move_possible(from_tile, has_jumped)
 
         for currTuple in possible_tiles:
             tile = currTuple[0]

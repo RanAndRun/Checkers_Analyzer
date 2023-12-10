@@ -1,6 +1,6 @@
 import pygame, sys
+from Board import Board
 import os
-from Board import *
 from time import sleep
 from Enums import EColor
 
@@ -50,6 +50,10 @@ def main():
     is_white_to_play = True
     hasJumped = False
     run = True
+
+    # analyzer = Analyzer(board)
+    # white_moves = analyzer.every_move_possible(EColor.white)
+    # print(white_moves)
     while run:
         board.draw()
         mouse_clicked = False
@@ -69,10 +73,11 @@ def main():
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
         if mouse_on_tile:
             mouse_on_pawn = board.get_pawn_from_tile[mouse_on_tile]
-
-        if mouse_on_tile:
-            if mouse_on_pawn and mouse_on_pawn.color == (
-                EColor.white if is_white_to_play else EColor.black
+            if (
+                mouse_on_pawn
+                and mouse_on_pawn.color
+                == (EColor.white if is_white_to_play else EColor.black)
+                and not first_selection
             ):
                 board.show_avilable_moves(mouse_on_tile, hasJumped)
             if (
