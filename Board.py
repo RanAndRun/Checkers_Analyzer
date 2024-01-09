@@ -1,10 +1,10 @@
 import pygame
-import os
 from Tile import Tile
 from Pawn import Pawn
 from Enums import EColor
-from Main import window_height, board_size, window_width, board_size
+from Main import *
 from King import King
+from MoveNode import MoveNode
 
 
 class Board:
@@ -209,15 +209,6 @@ class Board:
     def has_more_jumps(self, tile):
         return self.where_can_jump(tile) != []
 
-    def every_move_possible(self, from_tile: Tile, hasJumped: bool):
-        jump_is_possible = self.jump_is_possible(
-            self.get_pawn_from_tile[from_tile].color
-        )
-        possible_moves = self.where_can_jump(from_tile)
-        if not hasJumped and not jump_is_possible:
-            possible_moves += self.where_can_move(from_tile)
-        return possible_moves
-
     def move(self, from_tile: Tile, to_tile: Tile, hasJumped: bool):
         possible_moves = self.every_move_possible(from_tile, hasJumped)
         hasJumped = False
@@ -256,6 +247,16 @@ class Board:
 
         piece.alive = False
 
+    def every_move_possible(self, from_tile: Tile, hasJumped: bool):
+        possible_moves = []
+        if self.jump_is_possible(self.get_pawn_from_tile[from_tile].color):
+            possible_moves += self.where_can_jump(from_tile)
+
+        elif not hasJumped:
+            possible_moves += self.where_can_move(from_tile)
+
+        return possible_moves
+
     def show_avilable_moves(self, from_tile: Tile, has_jumped: bool):
         possible_tiles = self.every_move_possible(from_tile, has_jumped)
 
@@ -276,3 +277,15 @@ class Board:
                 if currTile.tile_rect.collidepoint(mouse_x, mouse_y):
                     return currTile
         return None
+
+    def every_move_for_player(self, color: EColor, hasJumped=False):
+        # moves_list = [(pawn, from_tile, to_tile), (), ()]
+        moves_list = []
+        for piece in self.pieces_list[color.value - 1]:
+            for move in Board.every_move_possible(self, piece.tile, hasJumped):
+                # moves_list.append((piece, piece.tile, move[0], move[1]))
+                moves_list.append(MoveNode(piece.tile, move[0], move[1]))
+                if move[1] is not None:
+                    moves_list[-1].next = self.every_move_for_player(piece.color, True)
+        return moves_list
+        # TODO test if works

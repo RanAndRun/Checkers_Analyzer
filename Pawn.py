@@ -3,7 +3,7 @@ from Enums import EColor
 from Tile import Tile
 import os
 import pygame
-from Main import screen
+
 
 
 class Pawn(Piece):

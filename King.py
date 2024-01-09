@@ -1,7 +1,6 @@
 from Piece import *
 from Enums import *
 from Tile import *
-from Main import *
 import os
 
 
