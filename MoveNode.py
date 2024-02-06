@@ -1,7 +1,15 @@
-class MoveNode:
+from Piece import Piece
+from Tile import Tile
 
-    def __init__(self, from_tile, to_tile, killed, next_jump=None):
-        self.from_tile = from_tile
+
+class MoveNode:
+    def __init__(
+        self, piece: Piece, to_tile: Tile, killed: Piece = None, children: list = None
+    ):
+        self.piece = piece
         self.to_tile = to_tile
         self.killed = killed
-        self.next_jump = next_jump
+        self.children = children
+
+    def add_child(self, child):
+        self.children.append(child)

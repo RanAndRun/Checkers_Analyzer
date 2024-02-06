@@ -27,3 +27,8 @@ class Piece:
 
     def is_alive(self) -> bool:
         return self.alive
+
+    def __str__(self):
+        position = f"({self.tile.column}, {self.tile.row})" if self.tile else "None"
+        status = "Alive" if self.alive else "Killed"
+        return f"{self.color.name}] at {position} - {status}"

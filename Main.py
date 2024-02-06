@@ -50,9 +50,18 @@ def main():
     is_white_to_play = True
     hasJumped = False
     run = True
-
-    print(board.every_move_for_player(EColor.white, hasJumped=False))
+    timer = 0
     while run:
+        print(board.evaluate_board_score())
+        timer += fps_clock.tick_busy_loop(
+            30
+        )  # Adjust the frame rate as needed (30 frames per second in this example)
+
+        # Check if one second has passed
+        if timer >= 2000:  # 1000 milliseconds = 1 second
+            # print(board.every_move_for_player(EColor.white, hasJumped=False))
+            timer = 0
+
         board.draw()
         mouse_clicked = False
         # who plays now

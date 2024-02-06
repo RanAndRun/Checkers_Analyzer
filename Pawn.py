@@ -5,7 +5,6 @@ import os
 import pygame
 
 
-
 class Pawn(Piece):
     white_pawn_img = os.path.join("assets", "red.png")
     black_pawn_img = os.path.join("assets", "black.png")
