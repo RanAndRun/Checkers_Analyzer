@@ -15,19 +15,20 @@ class Board:
     pieces_list = [[], []]
     get_pawn_from_tile = {}
     tiles = []
+    move_history = []
+
+    def add_move_to_history(self, move: MoveNode):
+        self.move_history.append(move)
+
+    def get_move_history(self):
+        return self.move_history
 
     def __init__(self):
         # start game board
         screen.blit(self.board_image, (0, 0))
         self.tiles = self.create_tiles()
         self.starting_position()
-
-        # for row in self.tiles:
-        #     for tile in row:
-        #         self.get_pawn_from_tile[tile] = None
-        # self.get_pawn_from_tile[self.tiles[3][3]] = Pawn(self.tiles[3][3], color=EColor.white)
-        # self.pieces_list[0].append
-        # self.get_pawn_from_tile[self.tiles[2][2]] = King(self.tiles[2][2], color=EColor.black)
+        self.move_history = []
 
     def draw(self):
         screen.blit(self.board_image, (0, 0))
@@ -103,7 +104,9 @@ class Board:
                 if not self.is_location_inside_board(new_x, new_y):
                     continue
                 if is_tile_not_taken(new_x, new_y):
-                    possible_tiles.append(MoveNode(piece, self.tiles[new_y][new_x]))
+                    possible_tiles.append(
+                        MoveNode(piece, piece.tile, self.tiles[new_y][new_x])
+                    )
 
         if type(piece) == King and piece.alive:
             directions = [
@@ -120,11 +123,19 @@ class Board:
                     new_x, new_y = x + step * dx, y + step * dy
 
                     if is_tile_not_taken(new_x, new_y):
-                        possible_tiles.append(MoveNode(piece, self.tiles[new_y][new_x]))
+                        possible_tiles.append(
+                            MoveNode(piece, piece.tile, self.tiles[new_y][new_x])
+                        )
                     else:
                         break
 
         return possible_tiles
+
+    def is_tile_taken(self, x, y):
+        return (
+            self.is_location_inside_board(x, y)
+            and self.get_pawn_from_tile[self.tiles[y][x]] is not None
+        )
 
     def where_can_jump(self, tile: Tile):
         piece = self.get_pawn_from_tile[tile]
@@ -166,6 +177,7 @@ class Board:
                         possible_jumps.append(
                             MoveNode(
                                 piece,
+                                piece.tile,
                                 self.tiles[new_y + dy][new_x + dx],
                                 self.get_pawn_from_tile[self.tiles[new_y][new_x]],
                             )
@@ -197,6 +209,7 @@ class Board:
                             possible_jumps.append(
                                 MoveNode(
                                     piece,
+                                    piece.tile,
                                     self.tiles[new_y + dy][new_x + dx],
                                     found,
                                 )
@@ -214,27 +227,6 @@ class Board:
 
     def has_more_jumps(self, tile):
         return self.where_can_jump(tile) != []
-
-    def move(self, from_tile: Tile, to_tile: Tile, hasJumped: bool):
-        possible_moves = self.every_move_possible_from_tile(from_tile, hasJumped)
-        hasJumped = False
-        for possible_move in possible_moves:
-            if possible_move.to_tile == to_tile:
-                piece = self.get_pawn_from_tile[from_tile]
-                if piece:
-                    piece.move(to_tile)
-                    self.get_pawn_from_tile[to_tile] = piece
-                    self.get_pawn_from_tile[from_tile] = None
-                    self.get_pawn_from_tile[to_tile].draw()
-                    self.upgrade_to_king(to_tile)
-                if possible_move.killed and possible_move.killed.tile:
-                    hasJumped = True
-                    self.get_pawn_from_tile[possible_move.killed.tile] = None
-                    possible_move.killed.killed()
-                    self.pieces_list[possible_move.killed.color.value - 1].remove(
-                        possible_move.killed
-                    )
-        return hasJumped
 
     def upgrade_to_king(self, tile: Tile):
         piece = self.get_pawn_from_tile[tile]
@@ -302,7 +294,9 @@ class Board:
                 self, piece.tile, hasJumped
             ):
                 # moves_list.append((piece, piece.tile, move[0], move[1]))
-                moves_list.append(MoveNode(piece, move.to_tile, move.killed))
+                moves_list.append(
+                    MoveNode(piece, piece.tile, move.to_tile, move.killed)
+                )
                 if move.killed is not None:
                     moves_list[-1].children = self.every_move_for_player(
                         piece.color, True
@@ -414,22 +408,67 @@ class Board:
             dx, dy = move
             behind_x, behind_y = x + dx, y + dy
 
-            # Check bounds and if a friendly piece is behind
-            if 0 <= behind_x < board_size and 0 <= behind_y < board_size:
-                behind_tile = self.tiles[behind_y][behind_x]
-                behind_piece = self.get_pawn_from_tile[behind_tile]
-                if behind_piece and behind_piece.color == piece.color:
-                    # Check if there's no opponent piece in the position to jump over the current piece
-                    opponent_jump_pos_x, opponent_jump_pos_y = x - dx, y - dy
-                    if (
-                        0 <= opponent_jump_pos_x < board_size
-                        and 0 <= opponent_jump_pos_y < board_size
-                    ):
-                        opponent_jump_tile = self.tiles[opponent_jump_pos_y][
-                            opponent_jump_pos_x
-                        ]
-                        opponent_piece = self.get_pawn_from_tile[opponent_jump_tile]
-                        if not opponent_piece or opponent_piece.color == piece.color:
-                            return True
+            if not self.is_tile_taken(behind_x, behind_y):
+                return False
 
-        return False
+        return True
+
+    def move(self, from_tile: Tile, to_tile: Tile, hasJumped: bool):
+        possible_moves = self.every_move_possible_from_tile(from_tile, hasJumped)
+        hasJumped = False
+
+        for possible_move in possible_moves:
+            if possible_move.to_tile == to_tile:
+                piece = self.get_pawn_from_tile[from_tile]
+                if piece:
+
+                    piece.move(to_tile)
+                    self.get_pawn_from_tile[to_tile] = piece
+                    self.get_pawn_from_tile[from_tile] = None
+                    self.get_pawn_from_tile[to_tile].draw()
+                    self.upgrade_to_king(to_tile)
+                if possible_move.killed and possible_move.killed.tile:
+                    hasJumped = True
+                    self.get_pawn_from_tile[possible_move.killed.tile] = None
+                    possible_move.killed.killed()
+                    self.pieces_list[possible_move.killed.color.value - 1].remove(
+                        possible_move.killed
+                    )
+        move = MoveNode(piece, from_tile, to_tile, possible_move.killed)
+        return move, hasJumped
+        # after finshing move, to put the move it the history
+
+    def undo_move(self):
+        # TODO to fix undo of double jump
+
+        if not self.move_history:
+            return  # No move to undo
+
+        last_move_sequence = self.move_history.pop()
+
+        # Create a temporary stack to reverse the move order
+        reverse_move_stack = []
+        current_move = last_move_sequence
+        while current_move:
+            reverse_move_stack.append(current_move)
+            current_move = current_move.children
+
+        # Now undo the moves in the correct order
+        while reverse_move_stack:
+            move_to_undo = reverse_move_stack.pop()
+
+            # Move the piece back to its original position
+            moved_piece = self.get_pawn_from_tile[move_to_undo.to_tile]
+
+            print(move_to_undo.from_tile.row, move_to_undo.from_tile.column)
+
+            self.get_pawn_from_tile[move_to_undo.from_tile] = moved_piece
+            self.get_pawn_from_tile[move_to_undo.to_tile] = None
+            moved_piece.tile = move_to_undo.from_tile
+
+            # Restore the captured piece, if any
+            if move_to_undo.killed:
+                captured_piece = move_to_undo.killed
+                self.get_pawn_from_tile[captured_piece.tile] = captured_piece
+                captured_piece.alive = True
+                self.pieces_list[captured_piece.color.value - 1].append(captured_piece)

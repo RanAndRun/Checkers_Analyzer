@@ -19,7 +19,13 @@ pygame.display.set_caption("Checkers_Analyzer")
 
 
 def handle_mouse_click(
-    board, tile, first_selection, second_selection, is_white_to_play, hasJumped
+    board,
+    tile,
+    first_selection,
+    second_selection,
+    is_white_to_play,
+    hasJumped,
+    before_move,
 ):
     if first_selection is None:
         if board.get_pawn_from_tile[tile] and board.get_pawn_from_tile[tile].color == (
@@ -28,17 +34,31 @@ def handle_mouse_click(
             first_selection = tile
     elif board.get_pawn_from_tile[tile] is None:
         second_selection = tile
-        # if was a jump
-        hasJumped = board.move(first_selection, second_selection, hasJumped)
+
+        move, hasJumped = board.move(first_selection, second_selection, hasJumped)
+
+        if before_move:
+            # if not the first move in the sequance, add this move at the last of the linked list
+            p = before_move
+            while p.children is not None:
+                p = p.children
+            p.childran = move
+
+        else:
+            before_move = move
+
         first_selection = None
         # if has more jumps possible, dont change color to play
         if not hasJumped or hasJumped and not board.has_more_jumps(second_selection):
             is_white_to_play = not is_white_to_play
             hasJumped = False
+            board.add_move_to_history(before_move)
+            before_move = None
+            print(board.get_move_history())
 
         second_selection = None
 
-    return first_selection, second_selection, is_white_to_play, hasJumped
+    return first_selection, second_selection, is_white_to_play, hasJumped, before_move
 
 
 def main():
@@ -51,8 +71,9 @@ def main():
     hasJumped = False
     run = True
     timer = 0
+    before_move = None
     while run:
-        print(board.evaluate_board_score())
+
         timer += fps_clock.tick_busy_loop(
             30
         )  # Adjust the frame rate as needed (30 frames per second in this example)
@@ -76,7 +97,10 @@ def main():
             elif event.type == pygame.MOUSEBUTTONUP:
                 mouse_x, mouse_y = event.pos
                 mouse_clicked = True
-
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_k:  # Check if 'K' key is pressed
+                    board.undo_move()
+                    is_white_to_play = not is_white_to_play
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
         if mouse_on_tile:
             mouse_on_pawn = board.get_pawn_from_tile[mouse_on_tile]
@@ -97,6 +121,7 @@ def main():
                     second_selection,
                     is_white_to_play,
                     hasJumped,
+                    before_move,
                 ) = handle_mouse_click(
                     board,
                     mouse_on_tile,
@@ -104,13 +129,16 @@ def main():
                     second_selection,
                     is_white_to_play,
                     hasJumped,
+                    before_move,
                 )
+
             elif mouse_clicked:
                 (
                     first_selection,
                     second_selection,
                     is_white_to_play,
                     hasJumped,
+                    before_move,
                 ) = handle_mouse_click(
                     board,
                     mouse_on_tile,
@@ -118,6 +146,7 @@ def main():
                     second_selection,
                     is_white_to_play,
                     hasJumped,
+                    before_move,
                 )
 
         if first_selection:

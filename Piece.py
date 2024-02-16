@@ -22,7 +22,6 @@ class Piece:
         screen.blit(self.image, dest=dest)
 
     def killed(self):
-        self.tile = None
         self.alive = False
 
     def is_alive(self) -> bool:
