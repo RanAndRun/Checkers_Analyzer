@@ -53,3 +53,27 @@ class CheckersAI:
                 best_move = move
 
         return best_move
+    
+    def evaluate_and_compare_move(self, played_move):
+        # Temporarily apply the played move
+        self.board.apply_move(played_move)
+        played_move_score = self.minimax(self.depth, False, -float('inf'), float('inf'))
+        self.board.undo_move(played_move)
+
+        # Find and evaluate the best possible move
+        best_move = self.find_best_move()
+        if best_move:
+            self.board.apply_move(best_move)
+            best_move_score = self.minimax(self.depth, False, -float('inf'), float('inf'))
+            self.board.undo_move(best_move)
+        else:
+            best_move_score = -float('inf')
+
+        return played_move_score, best_move_score
+    
+    def analyze_game(self, moves_list):
+        analysis_results = []
+        for move in moves_list:
+            score, best_score = self.evaluate_and_compare_move(move)
+            analysis_results.append((move, score, best_score))
+        return analysis_results

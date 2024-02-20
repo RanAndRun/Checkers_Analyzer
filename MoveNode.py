@@ -5,19 +5,22 @@ from Tile import Tile
 class MoveNode:
     def __init__(
         self,
-        piece: Piece,
-        from_tile: Tile,
-        to_tile: Tile,
-        killed: Piece = None,
-        promoted: bool = False,
-        children: list = None,
+        piece,
+        from_tile,
+        to_tile,
+        killed=None,
+        promoted=False,
+        children=None,
+        parent=None,
     ):
         self.piece = piece
-        self.to_tile = to_tile
         self.from_tile = from_tile
+        self.to_tile = to_tile
         self.killed = killed
-        self.promoted = promoted
-        self.children = children
+        self.promoted = promoted  # Flag to track if the move involved a promotion
+        self.children = children if children is not None else []
+        self.parent = parent
 
     def add_child(self, child):
+        child.parent = self
         self.children.append(child)

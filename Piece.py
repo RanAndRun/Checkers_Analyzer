@@ -17,7 +17,7 @@ class Piece:
     def move(self, to_tile: Tile):
         self.tile = to_tile
 
-    def draw(self):
+    def draw(self, screen):
         dest = self.tile.x_point, self.tile.y_point
         screen.blit(self.image, dest=dest)
 

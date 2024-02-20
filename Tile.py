@@ -1,6 +1,5 @@
-from Main import window_width, window_height, board_size
+from config import window_width, window_height, board_size
 import pygame
-from Main import screen
 import os
 
 
@@ -19,9 +18,9 @@ class Tile:
     def get_location(self):
         return self.column, self.row
 
-    def glow_yellow(self):
+    def glow_yellow(self, screen):
         pygame.draw.rect(screen, (255, 255, 0), self.tile_rect, 5)
         # TODO make it glow for the whole time the first selection is no None
 
-    def glow_blue(self):
+    def glow_blue(self, screen):
         pygame.draw.rect(screen, (31, 81, 255), self.tile_rect, 5)
