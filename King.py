@@ -10,3 +10,7 @@ class King(Piece):
 
     def __init__(self, tile: Tile, color: EColor):
         super().__init__(tile, color, self.white_king_img, self.black_king_img)
+
+    def __deepcopy__(self, memo):
+        # Call the deepcopy method of the superclass (Piece)
+        return super().__deepcopy__(memo)

@@ -65,7 +65,7 @@ def handle_mouse_click(
         # if has more jumps possible, don't change color to play
         if not hasJumped or hasJumped and not board.has_more_jumps(second_selection):
             is_white_to_play = not is_white_to_play
-            hasJumped = False
+            hasJumped = None
             board.add_move_to_history(before_move)
             before_move = None
             # print(board.get_move_history())
@@ -79,10 +79,11 @@ def main():
     mouse_x = 0  # store x cordinate of mouse event
     mouse_y = 0  # y cordinate
     board = Board(screen)
+    checkers_ai = CheckersAI(board)
     first_selection = None
     second_selection = None
     is_white_to_play = True
-    hasJumped = False
+    hasJumped = None
     run = True
     timer = 0
     before_move = None
@@ -118,8 +119,32 @@ def main():
                     is_white_to_play = not is_white_to_play
 
                 elif event.key == pygame.K_p:  # Check if 'P' key is pressed
-                    run = False
-                    analysis_started = True
+                    # run = False
+                    # analysis_started = True
+
+                    new_board = copy.deepcopy(board)
+                    print(new_board)
+
+                    # new_board.move(
+                    #     new_board.get_tile_from_location(2, 2),
+                    #     new_board.get_tile_from_location(3, 3),
+                    #     None,
+                    #     screen,
+                    # )
+
+                    # print(new_board)
+
+                elif event.key == pygame.K_r:
+                    piece = new_board.get_pawn_from_tile[
+                        new_board.get_tile_from_location(2, 2)
+                    ]
+                    print(piece)
+                    print(new_board.every_move_for_player(EColor.white))
+
+                elif event.key == pygame.K_t:  # Check if 'P' key is pressed
+                    print(board.pieces_list)
+                    moves_made = board.get_move_history()
+                    print(checkers_ai.find_best_move(EColor.white))
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
         if mouse_on_tile:
             mouse_on_pawn = board.get_pawn_from_tile[mouse_on_tile]
@@ -174,7 +199,7 @@ def main():
 
         if analysis_started:
             moves_made = board.get_move_history()
-            checkers_ai = CheckersAI(board)
+
             game_analysis = checkers_ai.analyze_game(moves_made)
 
         pygame.display.update()

@@ -1,6 +1,7 @@
 from config import window_width, window_height, board_size
 import pygame
 import os
+import copy
 
 
 class Tile:
@@ -24,3 +25,9 @@ class Tile:
 
     def glow_blue(self, screen):
         pygame.draw.rect(screen, (31, 81, 255), self.tile_rect, 5)
+
+    def __repr__(self):
+        return f"Tile(x={self.column}, y={self.row})"
+
+    def __deepcopy__(self, memo):
+        return Tile(self.column, self.row, self.x_point, self.y_point)
