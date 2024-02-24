@@ -3,6 +3,7 @@ import os
 from Board import *
 from time import sleep
 from Enums import EColor
+from BoardNode import BoardNode
 
 from CheckersAI import CheckersAI
 from config import window_width, window_height, board_size
@@ -119,20 +120,8 @@ def main():
                     is_white_to_play = not is_white_to_play
 
                 elif event.key == pygame.K_p:  # Check if 'P' key is pressed
-                    # run = False
-                    # analysis_started = True
-
-                    new_board = copy.deepcopy(board)
-                    print(new_board)
-
-                    # new_board.move(
-                    #     new_board.get_tile_from_location(2, 2),
-                    #     new_board.get_tile_from_location(3, 3),
-                    #     None,
-                    #     screen,
-                    # )
-
-                    # print(new_board)
+                    node = BoardNode(board)
+                    node.get_children()
 
                 elif event.key == pygame.K_r:
                     piece = new_board.get_pawn_from_tile[
@@ -142,9 +131,8 @@ def main():
                     print(new_board.every_move_for_player(EColor.white))
 
                 elif event.key == pygame.K_t:  # Check if 'P' key is pressed
-                    print(board.pieces_list)
                     moves_made = board.get_move_history()
-                    print(checkers_ai.find_best_move(EColor.white))
+                    print(checkers_ai.find_best_move(EColor.white, None))
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
         if mouse_on_tile:
             mouse_on_pawn = board.get_pawn_from_tile[mouse_on_tile]

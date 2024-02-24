@@ -3,6 +3,7 @@ from MoveNode import MoveNode
 from Enums import EColor
 from time import sleep
 import copy
+from BoardNode import BoardNode
 
 
 class CheckersAI:
@@ -16,44 +17,37 @@ class CheckersAI:
         score = sum([weight * score_tuple[i] for i, weight in enumerate(weights)])
         return score
 
-    def minimax(self, board, depth, maximizingPlayer):
-        if depth == 0 or board.is_game_over():
-            return self.evaluate_board(board)
+    def minimax(self, node, depth, maximizingPlayer):
+        if depth == 0 or node.board.is_game_over():
+            return self.evaluate_board(node.board)
 
         if maximizingPlayer:
-            maxEval = -float("inf")
-            for move in board.every_move_for_player(board.current_player):
-                new_board = copy.deepcopy(board)
-                new_board.apply_move(move)
-                print(new_board)
-                sleep(2)
-                eval = self.minimax(new_board, depth - 1, False)
+            maxEval = float("-inf")
+            for child in node.get_children(node.board.current_player, has_jumped=None):
+                eval = self.minimax(child, depth - 1, False)
                 maxEval = max(maxEval, eval)
             return maxEval
         else:
             minEval = float("inf")
-            for move in board.every_move_for_player(board.current_player):
-                new_board = copy.deepcopy(board)
-                new_board.apply_move(move)
-                print(new_board)
-                sleep(2)
-                eval = self.minimax(new_board, depth - 1, True)
+            for child in node.get_children(node.board.current_player, has_jumped=None):
+                eval = self.minimax(child, depth - 1, True)
                 minEval = min(minEval, eval)
             return minEval
 
-    def find_best_move(self, color_of_player):
+    def find_best_move(self, color_of_player, has_jumped=None):
+        og_board = self.board
+        root_node = BoardNode(og_board)
+        best_value = float("-inf")
         best_move = None
-        best_value = -float("inf")
+        print(root_node.get_children(color_of_player, has_jumped)[0].board)
+        for child in root_node.get_children(color_of_player, has_jumped):
+            value = self.minimax(child, 1, False)
+            if value > best_value:
+                best_value = value
+                best_move = child.move
 
-        for move in self.board.every_move_for_player(color_of_player):
-            new_board = copy.deepcopy(self.board)
-            new_board.apply_move(move)
-            move_value = self.minimax(new_board, self.depth - 1, False)
-            if move_value > best_value:
-                best_value = move_value
-                best_move = move
-
-        return best_move
+        # Apply best_move to the actual game board
+        print(best_move)
 
     def evaluate_and_compare_move(self, played_move: MoveNode):
         # Temporarily apply the played move

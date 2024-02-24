@@ -376,6 +376,19 @@ class Board:
         return move, hasJumped
 
     def apply_move(self, move_node: MoveNode):
+        # Update all the parameters of the move_node with their corresponding objects on the board
+        x, y = move_node.piece.tile.get_location()
+        move_node.piece = self.get_pawn_from_tile[self.tiles[y][x]]
+
+        x, y = move_node.from_tile.get_location()
+        move_node.from_tile = self.tiles[y][x]
+
+        x, y = move_node.to_tile.get_location()
+        move_node.to_tile = self.tiles[y][x]
+
+        if move_node.killed:
+            x, y = move_node.killed.tile.get_location()
+            move_node.killed = self.get_pawn_from_tile[self.tiles[y][x]]
         # Apply the initial move
         self._execute_move(move_node)
         self.switch_player()
@@ -384,6 +397,19 @@ class Board:
         while current_move.children:
             # Assuming each node has at most one child in a multi-jump sequence
             current_move = current_move.children[0]
+            # Update all the parameters of the current_move with their corresponding objects on the board
+            x, y = current_move.piece.tile.get_location()
+            current_move.piece = self.get_pawn_from_tile[self.tiles[y][x]]
+
+            x, y = current_move.from_tile.get_location()
+            current_move.from_tile = self.tiles[y][x]
+
+            x, y = current_move.to_tile.get_location()
+            current_move.to_tile = self.tiles[y][x]
+
+            if current_move.killed:
+                x, y = current_move.killed.tile.get_location()
+                current_move.killed = self.get_pawn_from_tile[self.tiles[y][x]]
             self._execute_move(current_move)
 
     def _execute_move(self, move_node: MoveNode):
