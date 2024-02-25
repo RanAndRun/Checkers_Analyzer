@@ -4,10 +4,11 @@ from Enums import EColor
 from time import sleep
 import copy
 from BoardNode import BoardNode
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class CheckersAI:
-    def __init__(self, board, depth=2):
+    def __init__(self, board, depth=3):
         self.board = board
         self.depth = depth
 
@@ -17,21 +18,27 @@ class CheckersAI:
         score = sum([weight * score_tuple[i] for i, weight in enumerate(weights)])
         return score
 
-    def minimax(self, node, depth, maximizingPlayer):
+    def minimax(self, node, depth, alpha, beta, maximizingPlayer):
         if depth == 0 or node.board.is_game_over():
             return self.evaluate_board(node.board)
 
         if maximizingPlayer:
             maxEval = float("-inf")
             for child in node.get_children(has_jumped=None):
-                eval = self.minimax(child, depth - 1, False)
+                eval = self.minimax(child, depth - 1, alpha, beta, False)
                 maxEval = max(maxEval, eval)
+                alpha = max(alpha, eval)
+                if beta <= alpha:
+                    break  # Beta cut-off
             return maxEval
         else:
             minEval = float("inf")
             for child in node.get_children(has_jumped=None):
-                eval = self.minimax(child, depth - 1, True)
+                eval = self.minimax(child, depth - 1, alpha, beta, True)
                 minEval = min(minEval, eval)
+                beta = min(beta, eval)
+                if beta <= alpha:
+                    break  # Alpha cut-off
             return minEval
 
     def find_best_move(self, has_jumped=None):
@@ -39,19 +46,28 @@ class CheckersAI:
         root_node = BoardNode(og_board)
         best_value = float("-inf")
         best_move = None
+        futures = []
 
-        for child in root_node.get_children(has_jumped):
-            value = self.minimax(
-                child,
-                self.depth,
-                True if root_node.board.current_player == EColor.white else False,
-            )
-            if value > best_value:
-                best_value = value
-                best_move = child.move
+        with ThreadPoolExecutor() as executor:
+            for child in root_node.get_children(has_jumped):
+                future = executor.submit(
+                    self.minimax,
+                    child,
+                    self.depth,
+                    float("-inf"),
+                    float("inf"),
+                    True if og_board.current_player == EColor.white else False,
+                )
+                futures.append((future, child.move))
 
-        # Apply best_move to the actual game board
+            for future, move in futures:
+                value = future.result()
+                if value > best_value:
+                    best_value = value
+                    best_move = move
+
         print("best move", best_move)
+        return best_move
 
     def evaluate_and_compare_move(self, played_move: MoveNode):
         # Temporarily apply the played move

@@ -113,6 +113,7 @@ def main():
                 elif event.key == pygame.K_p:  # Check if 'P' key is pressed
                     node = BoardNode(board)
                     checkers_ai.find_best_move(None)
+
                     print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
 
                 elif event.key == pygame.K_r:
