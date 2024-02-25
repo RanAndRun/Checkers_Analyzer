@@ -12,33 +12,20 @@ class BoardNode:
         self.value = None
 
     def get_children(self, has_jumped=None):
-        print("Original board before deepcopy:")
-        print(self.board)
 
         current_board = copy.deepcopy(self.board)
-
-        print("Original board after deepcopy:")
-        print(self.board)
-        print("Deep copied board:")
-        print(current_board)
-
+        print("current board \n ", current_board)
         children_states = []
         color = current_board.current_player
         moves = current_board.every_move_for_player(color, has_jumped)
-        print(moves)
         for move in moves:
             new_board = copy.deepcopy(
                 self.board
             )  # Create a new deep copy for each iteration
-
-            print("new board copy of current \n")
-            print(new_board)
             new_board.apply_move(move)
 
             print("New board after move:")
             print(new_board)
-            print("Original board after applying move on new board:")
-            print(self.board)  # Replace 'current_board' with 'self.board'
 
             children_states.append(BoardNode(new_board, move, self))
 

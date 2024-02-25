@@ -7,7 +7,7 @@ from BoardNode import BoardNode
 
 
 class CheckersAI:
-    def __init__(self, board, depth=4):
+    def __init__(self, board, depth=2):
         self.board = board
         self.depth = depth
 
@@ -23,31 +23,35 @@ class CheckersAI:
 
         if maximizingPlayer:
             maxEval = float("-inf")
-            for child in node.get_children(node.board.current_player, has_jumped=None):
+            for child in node.get_children(has_jumped=None):
                 eval = self.minimax(child, depth - 1, False)
                 maxEval = max(maxEval, eval)
             return maxEval
         else:
             minEval = float("inf")
-            for child in node.get_children(node.board.current_player, has_jumped=None):
+            for child in node.get_children(has_jumped=None):
                 eval = self.minimax(child, depth - 1, True)
                 minEval = min(minEval, eval)
             return minEval
 
-    def find_best_move(self, color_of_player, has_jumped=None):
+    def find_best_move(self, has_jumped=None):
         og_board = self.board
         root_node = BoardNode(og_board)
         best_value = float("-inf")
         best_move = None
-        print(root_node.get_children(color_of_player, has_jumped)[0].board)
-        for child in root_node.get_children(color_of_player, has_jumped):
-            value = self.minimax(child, 1, False)
+
+        for child in root_node.get_children(has_jumped):
+            value = self.minimax(
+                child,
+                self.depth,
+                True if root_node.board.current_player == EColor.white else False,
+            )
             if value > best_value:
                 best_value = value
                 best_move = child.move
 
         # Apply best_move to the actual game board
-        print(best_move)
+        print("best move", best_move)
 
     def evaluate_and_compare_move(self, played_move: MoveNode):
         # Temporarily apply the played move

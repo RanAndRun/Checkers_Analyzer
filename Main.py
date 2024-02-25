@@ -39,16 +39,6 @@ def handle_mouse_click(
             first_selection, second_selection, hasJumped, screen
         )
 
-        # Create a new MoveNode with the parent node being 'before_move'
-        new_move_node = MoveNode(
-            board.get_pawn_from_tile[first_selection],
-            first_selection,
-            second_selection,
-            killed=move.killed,
-            children=None,
-            parent=before_move,
-        )
-
         if before_move:
             # Find the last node in the existing move sequence
             last_node = before_move
@@ -66,6 +56,7 @@ def handle_mouse_click(
         # if has more jumps possible, don't change color to play
         if not hasJumped or hasJumped and not board.has_more_jumps(second_selection):
             is_white_to_play = not is_white_to_play
+            board.switch_player()
             hasJumped = None
             board.add_move_to_history(before_move)
             before_move = None
@@ -121,7 +112,8 @@ def main():
 
                 elif event.key == pygame.K_p:  # Check if 'P' key is pressed
                     node = BoardNode(board)
-                    node.get_children()
+                    checkers_ai.find_best_move(None)
+                    print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
 
                 elif event.key == pygame.K_r:
                     piece = new_board.get_pawn_from_tile[
