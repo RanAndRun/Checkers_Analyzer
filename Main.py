@@ -4,6 +4,7 @@ from Board import *
 from time import sleep
 from Enums import EColor
 from BoardNode import BoardNode
+import math
 
 from CheckersAI import CheckersAI
 from config import window_width, window_height, board_size
@@ -11,6 +12,10 @@ from config import window_width, window_height, board_size
 
 FPS = 30
 fps_clock = pygame.time.Clock()
+
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLACK = (0, 0, 0)
 
 pygame.init()
 
@@ -60,11 +65,67 @@ def handle_mouse_click(
             hasJumped = None
             board.add_move_to_history(before_move)
             before_move = None
-            # print(board.get_move_history())
 
         second_selection = None
 
     return first_selection, second_selection, is_white_to_play, hasJumped, before_move
+
+
+def draw_arrow(screen, from_coordinates, to_coordinates):
+    pygame.draw.line(screen, BLACK, from_coordinates, to_coordinates, 2)
+    # Calculate angle between the line and x-axis
+    angle = math.atan2(
+        to_coordinates[1] - from_coordinates[1], to_coordinates[0] - from_coordinates[0]
+    )
+    # Draw arrow head
+    pygame.draw.polygon(
+        screen,
+        RED,
+        [
+            (
+                to_coordinates[0] - 10 * math.cos(angle - math.pi / 6),
+                to_coordinates[1] - 10 * math.sin(angle - math.pi / 6),
+            ),
+            (to_coordinates[0], to_coordinates[1]),
+            (
+                to_coordinates[0] - 10 * math.cos(angle + math.pi / 6),
+                to_coordinates[1] - 10 * math.sin(angle + math.pi / 6),
+            ),
+        ],
+    )
+
+
+def display_analysis(screen, game_analysis, history, analysis_color):
+    running = True
+    # Create a new board instance for displaying analysis
+    analysis_board = Board(screen)
+
+    move_index = 0  # Keep track of the current move index
+
+    screen.fill((255, 255, 255))
+    analysis_board.draw(screen)
+    pygame.display.update()
+    pygame.time.wait(3000)
+    analysis_played_move = None
+    amount_of_moves = len(history)
+    while running:
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+        sleep(2)
+        if move_index < amount_of_moves and move_index < len(game_analysis):
+            analysis_played_move = game_analysis[move_index]
+            if analysis_played_move[0].piece.color == analysis_color:
+                played_move, move_score, best_move_score, best_move = game_analysis[
+                    move_index
+                ]
+                print("played move", played_move, "best move", best_move)
+
+            # analysis_board.apply_move(history[move_index][0])
+            analysis_board.move()
+            move_index += 1
+        pygame.display.update()
 
 
 def main():
@@ -88,7 +149,6 @@ def main():
 
         # Check if one second has passed
         if timer >= 2000:  # 1000 milliseconds = 1 second
-            # print(board.every_move_for_player(EColor.white, hasJumped=False))
             timer = 0
 
         board.draw(screen)
@@ -114,17 +174,11 @@ def main():
                     node = BoardNode(board)
                     checkers_ai.find_best_move(None)
 
-                    print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-
                 elif event.key == pygame.K_r:
-                    piece = new_board.get_pawn_from_tile[
-                        new_board.get_tile_from_location(2, 2)
-                    ]
-                    print(piece)
-                    print(new_board.every_move_for_player(EColor.white))
+                    analysis_started = True
 
                 elif event.key == pygame.K_t:  # Check if 'P' key is pressed
-                    moves_made = board.get_move_history()
+                    moves_made = board.get_history()[0]
                     print(checkers_ai.find_best_move(EColor.white, None))
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
         if mouse_on_tile:
@@ -179,9 +233,11 @@ def main():
             first_selection.glow_blue(screen)
 
         if analysis_started:
-            moves_made = board.get_move_history()
+            history = board.get_history()
+            color = EColor.white
+            game_analysis = checkers_ai.analyze_game(history, color)
 
-            game_analysis = checkers_ai.analyze_game(moves_made)
+            display_analysis(screen, game_analysis, history, color)
 
         pygame.display.update()
 

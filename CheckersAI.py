@@ -8,23 +8,29 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class CheckersAI:
-    def __init__(self, board, depth=3):
+    def __init__(self, board, depth=1):
         self.board = board
         self.depth = depth
 
     def evaluate_board(self, board):
         score_tuple = board.evaluate_board_score()
+
+        # magic numbers approved by research
         weights = [5, 7.75, 4, 2.5, 0.5, -3, 3]
+
         score = sum([weight * score_tuple[i] for i, weight in enumerate(weights)])
         return score
 
     def minimax(self, node, depth, alpha, beta, maximizingPlayer):
+        # input: BoardNode of the current board state, depth of the search tree, alpha, beta, and a boolean indicating if the current player is maximizing score or not
+        # output: the score of the best move for the current player
+
         if depth == 0 or node.board.is_game_over():
             return self.evaluate_board(node.board)
 
         if maximizingPlayer:
             maxEval = float("-inf")
-            for child in node.get_children(has_jumped=None):
+            for child in node.get_children():
                 eval = self.minimax(child, depth - 1, alpha, beta, False)
                 maxEval = max(maxEval, eval)
                 alpha = max(alpha, eval)
@@ -33,7 +39,7 @@ class CheckersAI:
             return maxEval
         else:
             minEval = float("inf")
-            for child in node.get_children(has_jumped=None):
+            for child in node.get_children():
                 eval = self.minimax(child, depth - 1, alpha, beta, True)
                 minEval = min(minEval, eval)
                 beta = min(beta, eval)
@@ -41,22 +47,25 @@ class CheckersAI:
                     break  # Alpha cut-off
             return minEval
 
-    def find_best_move(self, has_jumped=None):
-        og_board = self.board
-        root_node = BoardNode(og_board)
+    def find_best_move(self, board=None, depth=None):
+        if board is None:
+            board = self.board
+        if depth is None:
+            depth = self.depth
+        root_node = BoardNode(board)
         best_value = float("-inf")
         best_move = None
         futures = []
 
         with ThreadPoolExecutor() as executor:
-            for child in root_node.get_children(has_jumped):
+            for child in root_node.get_children():
                 future = executor.submit(
                     self.minimax,
                     child,
-                    self.depth,
+                    depth,
                     float("-inf"),
                     float("inf"),
-                    True if og_board.current_player == EColor.white else False,
+                    True if board.current_player == EColor.white else False,
                 )
                 futures.append((future, child.move))
 
@@ -66,32 +75,64 @@ class CheckersAI:
                     best_value = value
                     best_move = move
 
-        print("best move", best_move)
-        return best_move
+        return best_move, best_value
 
-    def evaluate_and_compare_move(self, played_move: MoveNode):
+    def evaluate_and_compare_move(self, played_move: MoveNode, board: Board):
         # Temporarily apply the played move
         color_of_player = played_move.piece.color
-        self.board.apply_move(played_move)
-        played_move_score = self.minimax(self.depth, False, -float("inf"), float("inf"))
-        self.board.undo_move()
+        is_max = (
+            color_of_player == EColor.black
+        )  # If the played move is white, the next move is black, and vice versa
+        board.apply_move(played_move)
 
-        # Find and evaluate the best possible move
-        best_move = self.find_best_move(color_of_player)
+        # Create a BoardNode for the current board state after the move
+        after_move_node = BoardNode(board)
+
+        # Use minimax to evaluate the board state after the played move, looking 2 moves ahead
+        played_move_score = self.minimax(
+            after_move_node,
+            self.depth - 1,
+            -float("inf"),
+            float("inf"),
+            not is_max,
+        )
+
+        # Undo the move to restore the original board state
+        board.undo_move()
+
+        # Find and evaluate the best possible move from the original board state
+        best_move, best_move_score = self.find_best_move(board=board)
+        print("best move", best_move, best_move_score)
         if best_move:
-            self.board.apply_move(best_move)
+            # Temporarily apply the best move
+            board.apply_move(best_move)
+            best_move_node = BoardNode(board)
+
+            # Evaluate the score after the best move
             best_move_score = self.minimax(
-                self.depth, False, -float("inf"), float("inf")
+                best_move_node, self.depth, -float("inf"), float("inf"), is_max
             )
-            self.board.undo_move()
+            board.undo_move()
         else:
             best_move_score = -float("inf")
 
-        return played_move_score, best_move_score
+        return played_move_score, best_move_score, best_move
 
-    def analyze_game(self, moves_list):
+    def analyze_game(self, history, color):
         analysis_results = []
-        for move in moves_list:
-            score, best_score = self.evaluate_and_compare_move(move)
-            analysis_results.append((move, score, best_score))
+
+        # Iterate over each move and corresponding board state
+        for move, board in history:
+            # Skip if the move's piece color doesn't match the specified color
+            if move.piece.color != color:
+                print("history color not matching", move.piece.color, color)
+                continue
+            # Perform evaluation and comparison for the move
+            move_score, best_move_score, best_move = self.evaluate_and_compare_move(
+                move, board
+            )
+
+            # Append the results to the analysis_results list
+            analysis_results.append((move, move_score, best_move_score, best_move))
+        print("results", analysis_results)
         return analysis_results

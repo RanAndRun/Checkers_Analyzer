@@ -16,6 +16,9 @@ class Tile:
             x_point, y_point, self.tile_width, self.tile_height
         )
 
+    def get_cordinates(self):
+        return self.x_point, self.y_point
+
     def get_location(self):
         return self.column, self.row
 

@@ -20,6 +20,7 @@ class Board:
     get_pawn_from_tile = {}
     tiles = []
     move_history = []
+    board_history = []
 
     # Board Initialization and Setup
 
@@ -389,7 +390,7 @@ class Board:
     def apply_move(self, move_node: MoveNode):
 
         # Update all the parameters of the move_node with their corresponding objects on the board
-        x, y = move_node.piece.tile.get_location()
+        x, y = move_node.from_tile.get_location()
         move_node.piece = self.get_pawn_from_tile[self.tiles[y][x]]
 
         x, y = move_node.from_tile.get_location()
@@ -402,6 +403,7 @@ class Board:
             x, y = move_node.killed.tile.get_location()
             move_node.killed = self.get_pawn_from_tile[self.tiles[y][x]]
         # Apply the initial move
+
         self._execute_move(move_node)
 
         # Apply subsequent moves in the multi-jump sequence
@@ -410,7 +412,7 @@ class Board:
             # Assuming each node has at most one child in a multi-jump sequence
             current_move = current_move.children[0]
             # Update all the parameters of the current_move with their corresponding objects on the board
-            x, y = current_move.piece.tile.get_location()
+            x, y = current_move.from_tile.get_location()
             current_move.piece = self.get_pawn_from_tile[self.tiles[y][x]]
 
             x, y = current_move.from_tile.get_location()
@@ -703,13 +705,22 @@ class Board:
         self.current_player = (
             EColor.black if self.current_player == EColor.white else EColor.white
         )
-        print(self.current_player)
 
     def add_move_to_history(self, move: MoveNode):
         self.move_history.append(move)
+        copy_of_board = copy.deepcopy(self)  # Renamed variable
+        copy_of_board.undo_move()
+        self.board_history.append(copy_of_board)
 
-    def get_move_history(self):
-        return self.move_history
+    def get_history(self):
+        history = []
+        for counter in range(len(self.move_history)):
+            history.append((self.move_history[counter], self.board_history[counter]))
+        return history
+
+    def set_history(self, move_history, board_history):
+        self.move_history = move_history
+        self.board_history = board_history
 
     def __repr__(self):
         board_representation = ""
@@ -726,3 +737,6 @@ class Board:
                     board_representation += ". "
             board_representation += "\n"
         return board_representation
+
+
+# TODO undo board_history when undoing moves
