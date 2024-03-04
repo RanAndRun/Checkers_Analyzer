@@ -37,7 +37,7 @@ class MoveNode:
     def __deepcopy__(self, memo):
         # Deep copy each component
         new_piece = copy.deepcopy(self.piece, memo)
-        new_from_tile = copy.deepcopy(self.from_tile, memo)
+        new_from_tile = this.
         new_to_tile = copy.deepcopy(self.to_tile, memo)
         new_killed = copy.deepcopy(self.killed, memo) if self.killed else None
         new_children = copy.deepcopy(self.children, memo) if self.children else []

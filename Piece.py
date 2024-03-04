@@ -5,6 +5,10 @@ from pygame import display
 
 
 class Piece:
+
+    scale_factor_width = 1
+    scale_factor_height = 1
+
     def __init__(self, tile: Tile, color: EColor, white_img_path, black_img_path):
         self.alive = True
         self.tile = tile
@@ -20,8 +24,16 @@ class Piece:
         self.tile = to_tile
 
     def draw(self, screen):
-        dest = self.tile.x_point, self.tile.y_point
+        dest = (
+            self.tile.x_point * Piece.scale_factor_width,
+            self.tile.y_point * Piece.scale_factor_height,
+        )
         screen.blit(self.image, dest=dest)
+
+    @classmethod
+    def update_scale_factors(cls, scale_factor_width, scale_factor_height):
+        cls.scale_factor_width = scale_factor_width
+        cls.scale_factor_height = scale_factor_height
 
     def killed(self):
         self.alive = False

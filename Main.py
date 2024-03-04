@@ -121,9 +121,18 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     move_index
                 ]
                 print("played move", played_move, "best move", best_move)
+                analysis_board.apply_move(best_move)
+                sleep(2)
+                analysis_board.undo_move()
+                sleep(2)
 
+                analysis_board.apply_move(played_move)
+                sleep(2)
+
+            else:
+                played_move = history[move_index][0]
+                analysis_board.apply_move(played_move)
             # analysis_board.apply_move(history[move_index][0])
-            analysis_board.move()
             move_index += 1
         pygame.display.update()
 
@@ -172,7 +181,26 @@ def main():
 
                 elif event.key == pygame.K_p:  # Check if 'P' key is pressed
                     node = BoardNode(board)
-                    checkers_ai.find_best_move(None)
+                    best_move = checkers_ai.find_best_move(None)
+                    print(best_move)
+                    board.apply_move(best_move[0])
+
+                elif event.key == pygame.K_q:  # Check if 'Q' key is pressed
+                    history = board.get_history()
+                    last_move, last_board = history[-1]
+                    played_move_score, best_value, best_move = checkers_ai.compare_move(
+                        last_move, last_board
+                    )
+                    print(
+                        "played move",
+                        last_move,
+                        "played move score",
+                        played_move_score,
+                        "best move score",
+                        best_value,
+                        "best move",
+                        best_move,
+                    )
 
                 elif event.key == pygame.K_r:
                     analysis_started = True
@@ -243,4 +271,5 @@ def main():
 
 
 if __name__ == "__main__":
+    print(pygame.display.Info)
     main()

@@ -297,6 +297,7 @@ class Board:
 
         jump_moves = []
         found_jump = False
+        promoted = False
 
         # Check all pieces for jump moves
         for piece in self.pieces_list[color.value - 1]:
@@ -308,9 +309,23 @@ class Board:
                         # Create a new board for simulating the jump
                         temp_board = copy.deepcopy(self)
                         temp_board.apply_move(jump_move)
+
+                        if (
+                            piece.color == EColor.white
+                            and jump_move.to_tile.row == board_size - 1
+                        ) or (
+                            piece.color == EColor.black and jump_move.to_tile.row != 0
+                        ):
+                            promoted = True
+
                         new_node = MoveNode(
-                            piece, piece.tile, jump_move.to_tile, jump_move.killed
+                            piece,
+                            piece.tile,
+                            jump_move.to_tile,
+                            jump_move.killed,
+                            promoted=promoted,
                         )
+                        promoted = False
 
                         # Recursively check for further jumps on the temporary board
                         if temp_board.has_more_jumps(jump_move.to_tile):
@@ -319,6 +334,7 @@ class Board:
                             )
                         else:
                             new_node.children = []
+
                         jump_moves.append(new_node)
 
         # If no jumps found, and no jump has been made yet, consider regular moves
@@ -330,11 +346,20 @@ class Board:
 
     def get_regular_moves(self, color):
         regular_moves = []
+        promoted = False
         for piece in self.pieces_list[color.value - 1]:
             if piece.is_alive():
                 regular_options, _ = self.every_move_possible_for_piece(piece, None)
                 for move in regular_options:
-                    new_node = MoveNode(piece, piece.tile, move.to_tile, None)
+                    if (
+                        piece.color == EColor.white
+                        and move.to_tile.row == board_size - 1
+                    ) or (piece.color == EColor.black and move.to_tile.row != 0):
+                        promoted = True
+                    new_node = MoveNode(
+                        piece, piece.tile, move.to_tile, None, promoted=promoted
+                    )
+                    promoted = False
                     regular_moves.append(new_node)
         return regular_moves
 

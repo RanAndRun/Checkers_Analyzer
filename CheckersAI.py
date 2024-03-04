@@ -36,6 +36,7 @@ class CheckersAI:
                 alpha = max(alpha, eval)
                 if beta <= alpha:
                     break  # Beta cut-off
+            node.value = maxEval
             return maxEval
         else:
             minEval = float("inf")
@@ -45,6 +46,7 @@ class CheckersAI:
                 beta = min(beta, eval)
                 if beta <= alpha:
                     break  # Alpha cut-off
+            node.value = minEval
             return minEval
 
     def find_best_move(self, board=None, depth=None):
@@ -136,3 +138,20 @@ class CheckersAI:
             analysis_results.append((move, move_score, best_move_score, best_move))
         print("results", analysis_results)
         return analysis_results
+
+    def find_move_score(self, move, board):
+        color_of_player = move.piece.color
+        is_max = color_of_player == EColor.white
+        board.apply_move(move)
+        move_node = BoardNode(board)
+        score = self.minimax(
+            move_node, self.depth - 1, -float("inf"), float("inf"), is_max
+        )
+        board.undo_move()
+        return score
+
+    def compare_move(self, move, board):
+        best_move, best_value = self.find_best_move(board=board)
+        played_move_score = self.find_move_score(move, board)
+
+        return played_move_score, best_value, best_move
