@@ -22,6 +22,9 @@ class Tile:
     def get_location(self):
         return self.column, self.row
 
+    def get_matrix_location(self):
+        return self.row, self.column
+
     def glow_yellow(self, screen):
         pygame.draw.rect(screen, (255, 255, 0), self.tile_rect, 5)
         # TODO make it glow for the whole time the first selection is no None

@@ -7,8 +7,8 @@ class MoveNode:
     def __init__(
         self,
         piece,
-        from_tile,
-        to_tile,
+        from_tile: tuple[int, int],
+        to_tile: tuple[int, int],
         killed=None,
         promoted=False,
         children=None,
@@ -37,8 +37,8 @@ class MoveNode:
     def __deepcopy__(self, memo):
         # Deep copy each component
         new_piece = copy.deepcopy(self.piece, memo)
-        new_from_tile = this.
-        new_to_tile = copy.deepcopy(self.to_tile, memo)
+        new_from_tile = self.from_tile
+        new_to_tile = self.to_tile
         new_killed = copy.deepcopy(self.killed, memo) if self.killed else None
         new_children = copy.deepcopy(self.children, memo) if self.children else []
         # Parent is usually not deep-copied to avoid circular references

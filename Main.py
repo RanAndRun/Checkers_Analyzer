@@ -32,13 +32,14 @@ def handle_mouse_click(
     hasJumped,
     before_move,
 ):
+    x, y = tile.get_location()
     if first_selection is None:
-        if board.get_pawn_from_tile[tile] and board.get_pawn_from_tile[tile].color == (
+        if board.pieces_matrix[y][x] and board.pieces_matrix[y][x].color == (
             EColor.white if is_white_to_play else EColor.black
         ):
-            first_selection = tile
-    elif board.get_pawn_from_tile[tile] is None:
-        second_selection = tile
+            first_selection = (x, y)
+    elif board.pieces_matrix[y][x] is None:
+        second_selection = (x, y)
 
         move, hasJumped = board.move(
             first_selection, second_selection, hasJumped, screen
@@ -205,18 +206,23 @@ def main():
                 elif event.key == pygame.K_r:
                     analysis_started = True
 
+                elif event.key == pygame.K_s:
+                    print(board.pieces_matrix)
+                    print(board.every_move_for_player(EColor.white))
+
                 elif event.key == pygame.K_t:  # Check if 'P' key is pressed
                     moves_made = board.get_history()[0]
                     print(checkers_ai.find_best_move(EColor.white, None))
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
         if mouse_on_tile:
-            mouse_on_pawn = board.get_pawn_from_tile[mouse_on_tile]
-
-        if mouse_on_tile:
+            x, y = mouse_on_tile.get_location()
+            mouse_on_pawn = board.pieces_matrix[y][x]
             if mouse_on_pawn and mouse_on_pawn.color == (
                 EColor.white if is_white_to_play else EColor.black
             ):
-                board.show_avilable_moves(mouse_on_tile, hasJumped, screen)
+                board.show_avilable_moves(
+                    mouse_on_tile.get_location(), hasJumped, screen
+                )
             if (
                 mouse_clicked
                 and mouse_on_pawn
@@ -258,7 +264,8 @@ def main():
 
         if first_selection:
             board.show_avilable_moves(first_selection, hasJumped, screen)
-            first_selection.glow_blue(screen)
+            x, y = first_selection
+            board.tiles[y][x].glow_blue(screen)
 
         if analysis_started:
             history = board.get_history()

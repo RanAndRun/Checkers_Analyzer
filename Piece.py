@@ -9,7 +9,7 @@ class Piece:
     scale_factor_width = 1
     scale_factor_height = 1
 
-    def __init__(self, tile: Tile, color: EColor, white_img_path, black_img_path):
+    def __init__(self, tile: tuple, color: EColor, white_img_path, black_img_path):
         self.alive = True
         self.tile = tile
         self.color = color
@@ -20,15 +20,27 @@ class Piece:
         else:
             self.image = pygame.image.load(black_img_path)
 
-    def move(self, to_tile: Tile):
+    def move(self, to_tile: tuple[int, int]):
         self.tile = to_tile
 
-    def draw(self, screen):
-        dest = (
-            self.tile.x_point * Piece.scale_factor_width,
-            self.tile.y_point * Piece.scale_factor_height,
+    def get_coordinates(self):
+        tile_width, tile_height = (
+            window_width // board_size,
+            window_height // board_size,
         )
-        screen.blit(self.image, dest=dest)
+        x = self.tile[0] * tile_width
+        # Invert the y-coordinate so (0,0) is at the top-left instead of the bottom-left
+        y = (board_size - 1 - self.tile[1]) * tile_height
+        return x, y
+
+    def draw(self, screen):
+        # Assuming self.tile is a Tile object with x, y pixel coordinates
+        x, y = self.get_coordinates()
+        dest = (
+            x * Piece.scale_factor_width,
+            y * Piece.scale_factor_height,
+        )
+        screen.blit(self.image, dest)
 
     @classmethod
     def update_scale_factors(cls, scale_factor_width, scale_factor_height):
@@ -42,9 +54,9 @@ class Piece:
         return self.alive
 
     def __repr__(self):
-        position = f"({self.tile.column}, {self.tile.row})" if self.tile else "None"
+        position = f"({self.tile[0]}, {self.tile[1]})" if self.tile else "None"
         status = "Alive" if self.alive else "Killed"
-        return f"{self.color.name}] at {position} - {status}"
+        return f"{self.color.name} at {position} - {status}!"
 
     def __deepcopy__(self, memo):
         # Create an instance of the correct subclass
@@ -53,7 +65,7 @@ class Piece:
 
         # Copy attributes
         copied_piece.alive = self.alive
-        copied_piece.tile = copy.deepcopy(self.tile, memo)
+        copied_piece.tile = self.tile
         copied_piece.color = self.color
         # Assuming you have paths for images as class variables like white_img_path, black_img_path
         copied_piece.image = pygame.image.load(
