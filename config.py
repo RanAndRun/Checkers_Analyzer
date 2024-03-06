@@ -2,8 +2,8 @@
 import pygame
 
 
-window_width = 1200
-window_height = 1200
+window_width = 850
+window_height = 850
 board_size = 8
 
 

@@ -1,5 +1,7 @@
 from Piece import Piece
 from Tile import Tile
+from King import King
+from Pawn import Pawn
 import copy
 
 
@@ -25,6 +27,8 @@ class MoveNode:
     def add_child(self, child):
         child.parent = self
         self.children.append(child)
+
+
 
     def __repr__(self):
         move_details = f"Move from {self.from_tile} to {self.to_tile}"

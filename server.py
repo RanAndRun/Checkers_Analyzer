@@ -5,6 +5,8 @@ DISCONNECT_MSG = "DISCONNECT!"
 HEADER = 64
 FORMAT = "utf-8"
 
+BUFFER_SIZE = 2048
+
 
 def send(data, client: socket.socket):
     serialized_data = pickle.dumps(data)
@@ -25,39 +27,35 @@ def start_server():
     white_player_socket, white_player_address = server_socket.accept()
     print("White player connected:", white_player_address)
 
+    white_player_socket.send(pickle.dumps(True))
+
     black_player_socket, black_player_address = server_socket.accept()
     print("Black player connected:", black_player_address)
 
+    black_player_socket.send(pickle.dumps(False))
+
     # Send initial color information to both players
-    send("white", white_player_socket)
-    send("black", black_player_socket)
 
     connected = True
     while connected:
         try:
-            msg_length = white_player_socket.recv(HEADER).decode(FORMAT)
-            if msg_length:
-                msg_length = int(msg_length)
-                msg = pickle.loads(white_player_socket.recv(msg_length))
-                print(f"[{white_player_address}]: {msg}")
+            msg = pickle.loads(white_player_socket.recv(BUFFER_SIZE))
+            print(f"[{white_player_address}]: {msg}")
 
-                if msg == DISCONNECT_MSG:
-                    connected = False
-                    break
+            if msg == DISCONNECT_MSG:
+                connected = False
+                break
 
-                send(msg, black_player_socket)
+            black_player_socket.send(pickle.dumps(msg))
 
-            msg_length = black_player_socket.recv(HEADER).decode(FORMAT)
-            if msg_length:
-                msg_length = int(msg_length)
-                msg = pickle.loads(black_player_socket.recv(msg_length))
-                print(f"[{black_player_address}]: {msg}")
+            msg = pickle.loads(black_player_socket.recv(BUFFER_SIZE))
+            print(f"[{black_player_address}]: {msg}")
 
-                if msg == DISCONNECT_MSG:
-                    connected = False
-                    break
+            if msg == DISCONNECT_MSG:
+                connected = False
+                break
 
-                send(msg, white_player_socket)
+            white_player_socket.send(pickle.dumps(msg))
 
         except Exception as e:
             print(f"Error: {e}")

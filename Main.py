@@ -6,6 +6,7 @@ from Enums import EColor
 from BoardNode import BoardNode
 from Network import Network
 import math
+import threading
 
 from CheckersAI import CheckersAI
 from config import window_width, window_height, board_size
@@ -22,55 +23,82 @@ pygame.init()
 
 screen = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption("Checkers_Analyzer")
+game_online = False
+
+if game_online:
+    network = Network()
 
 
 def handle_mouse_click(
-    board,
-    tile,
-    first_selection,
-    second_selection,
-    is_white_to_play,
-    hasJumped,
-    before_move,
+    board, clicked_tile, first_selection, is_white_to_play, hasJumped, before_move
 ):
-    x, y = tile.get_location()
+    clicked_location = clicked_tile.get_location()
+    clicked_piece = board.get_piece_at_tile(clicked_location)
+    current_color = EColor.white if is_white_to_play else EColor.black
+
     if first_selection is None:
-        if board.pieces_matrix[y][x] and board.pieces_matrix[y][x].color == (
-            EColor.white if is_white_to_play else EColor.black
-        ):
-            first_selection = (x, y)
-    elif board.pieces_matrix[y][x] is None:
-        second_selection = (x, y)
+        # Handle first selection
+        if clicked_piece and clicked_piece.color == current_color:
+            first_selection = clicked_location
+    else:
+        # Handle second selection
+        selected_piece = board.get_piece_at_tile(first_selection)
+        if selected_piece:
+            moves_possible, jumps_possible = board.every_move_possible_for_piece(
+                selected_piece, hasJumped
+            )
+            if jumps_possible:
+                moves_possible = jumps_possible
 
-        move, hasJumped = board.move(
-            first_selection, second_selection, hasJumped, screen
-        )
+            move_exists = any(
+                move.from_tile == first_selection and move.to_tile == clicked_location
+                for move in moves_possible
+            )
+            if move_exists:
+                move = next(
+                    move
+                    for move in moves_possible
+                    if move.from_tile == first_selection
+                    and move.to_tile == clicked_location
+                )
+                move_node = MoveNode(
+                    selected_piece,
+                    first_selection,
+                    clicked_location,
+                    move.killed,
+                    move.promoted,
+                    move.children,
+                    move.parent,
+                )
+                board.apply_move(move_node)
 
-        if before_move:
-            # Find the last node in the existing move sequence
-            last_node = before_move
-            while last_node.children:
-                last_node = last_node.children[
-                    0
-                ]  # Assuming each node has at most one child
+                # Update the move sequence
+                if before_move:
+                    last_node = before_move
+                    while last_node.children:
+                        last_node = last_node.children[0]
+                    last_node.add_child(move_node)
+                else:
+                    before_move = move_node
 
-            # Link the new move to the existing sequence
-            last_node.add_child(move)
-        else:
-            before_move = move
+                # Check and update the game state
+                if move_node.killed and board.has_more_jumps(clicked_location):
+                    hasJumped = selected_piece
+                else:
+                    is_white_to_play = not is_white_to_play
+                    board.switch_player()
+                    hasJumped = None
+                    board.add_move_to_history(before_move)
+                    before_move = None
+
+                    # Handle online game state update
+                    if game_online:
+                        simplified_move_node = Board.serialize_move_node(move_node)
+                        network.send(simplified_move_node)
 
         first_selection = None
-        # if has more jumps possible, don't change color to play
-        if not hasJumped or hasJumped and not board.has_more_jumps(second_selection):
-            is_white_to_play = not is_white_to_play
-            board.switch_player()
-            hasJumped = None
-            board.add_move_to_history(before_move)
-            before_move = None
 
-        second_selection = None
-
-    return first_selection, second_selection, is_white_to_play, hasJumped, before_move
+    return first_selection, is_white_to_play, hasJumped, before_move
 
 
 def draw_arrow(screen, from_coordinates, to_coordinates):
@@ -168,11 +196,14 @@ def main():
     mouse_y = 0  # y cordinate
     board = Board(screen)
     checkers_ai = CheckersAI(board)
-    network = Network()
-    network.connect()
+
     first_selection = None
     second_selection = None
     is_white_to_play = True
+    if game_online:
+        is_white_to_play = network.connect()
+    player_color = is_white_to_play
+    print(is_white_to_play)
     hasJumped = None
     run = True
     timer = 0
@@ -241,59 +272,72 @@ def main():
                     moves_made = board.get_history()[0]
                     print(checkers_ai.find_best_move(EColor.white, None))
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
-        if mouse_on_tile:
-            x, y = mouse_on_tile.get_location()
-            mouse_on_pawn = board.pieces_matrix[y][x]
-            if mouse_on_pawn and mouse_on_pawn.color == (
-                EColor.white if is_white_to_play else EColor.black
-            ):
-                board.show_avilable_moves(
-                    mouse_on_tile.get_location(), hasJumped, screen
-                )
-            if (
-                mouse_clicked
-                and mouse_on_pawn
-                and mouse_on_pawn.color
-                == (EColor.white if is_white_to_play else EColor.black)
-            ):
-                (
-                    first_selection,
-                    second_selection,
-                    is_white_to_play,
-                    hasJumped,
-                    before_move,
-                ) = handle_mouse_click(
-                    board,
-                    mouse_on_tile,
-                    first_selection,
-                    second_selection,
-                    is_white_to_play,
-                    hasJumped,
-                    before_move,
-                )
+        if player_color == is_white_to_play or not game_online:
+            if mouse_on_tile:
+                x, y = mouse_on_tile.get_location()
+                mouse_on_pawn = board.pieces_matrix[y][x]
+                if mouse_on_pawn and mouse_on_pawn.color == (
+                    EColor.white if is_white_to_play else EColor.black
+                ):
+                    board.show_avilable_moves(
+                        mouse_on_tile.get_location(), hasJumped, screen
+                    )
+                if (
+                    mouse_clicked
+                    and mouse_on_pawn
+                    and mouse_on_pawn.color
+                    == (EColor.white if is_white_to_play else EColor.black)
+                ):
+                    (
+                        first_selection,
+                        is_white_to_play,
+                        hasJumped,
+                        before_move,
+                    ) = handle_mouse_click(
+                        board,
+                        mouse_on_tile,
+                        first_selection,
+                        is_white_to_play,
+                        hasJumped,
+                        before_move,
+                    )
 
-            elif mouse_clicked:
-                (
-                    first_selection,
-                    second_selection,
-                    is_white_to_play,
-                    hasJumped,
-                    before_move,
-                ) = handle_mouse_click(
-                    board,
-                    mouse_on_tile,
-                    first_selection,
-                    second_selection,
-                    is_white_to_play,
-                    hasJumped,
-                    before_move,
-                )
+                elif mouse_clicked:
+                    (
+                        first_selection,
+                        is_white_to_play,
+                        hasJumped,
+                        before_move,
+                    ) = handle_mouse_click(
+                        board,
+                        mouse_on_tile,
+                        first_selection,
+                        is_white_to_play,
+                        hasJumped,
+                        before_move,
+                    )
 
-        if first_selection:
-            board.show_avilable_moves(first_selection, hasJumped, screen)
-            x, y = first_selection
-            board.tiles[y][x].glow_blue(screen)
+            if first_selection:
+                board.show_avilable_moves(first_selection, hasJumped, screen)
+                x, y = first_selection
+                board.tiles[y][x].glow_blue(screen)
 
+        elif game_online:
+
+            def receive_move():
+                try:
+                    msg = network.receive()
+                    if msg:
+                        move = board.unserialize_move_node(msg)
+                        print("move", move)
+                        board.apply_move(move)
+                        is_white_to_play = not is_white_to_play
+                        pygame.display.update()
+                except Exception as e:
+                    print(f"Error: {e}")
+
+            receive_thread = threading.Thread(target=receive_move)
+            receive_thread.start()
         if analysis_started:
             history = board.get_history()
             color = EColor.white

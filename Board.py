@@ -167,7 +167,10 @@ class Board:
                 if not self.is_location_inside_board(new_x, new_y):
                     continue
                 if not self.is_tile_taken(new_x, new_y):
-                    possible_tiles.append(MoveNode(piece, piece.tile, (new_x, new_y)))
+                    promoted = self.can_get_promoted(piece, (new_x + dx, new_y + dy))
+                    possible_tiles.append(
+                        MoveNode(piece, piece.tile, (new_x, new_y), promoted=promoted)
+                    )
 
         if type(piece) == King and piece.alive:
             directions = [
@@ -225,12 +228,16 @@ class Board:
                         new_x, new_y
                     ) and self.is_opponent_pawn_on_tile(new_x, new_y, piece.color):
                         if not self.is_tile_taken(jump_x, jump_y):
+                            promoted = self.can_get_promoted(
+                                piece, (new_x + dx, new_y + dy)
+                            )
                             possible_jumps.append(
                                 MoveNode(
                                     piece,
                                     tile,
                                     (jump_x, jump_y),
                                     self.pieces_matrix[new_y][new_x],
+                                    promoted=promoted,
                                 )
                             )
 
@@ -261,6 +268,7 @@ class Board:
                         if not self.is_location_inside_board(new_x + dx, new_y + dy):
                             break
                         if not self.is_tile_taken(new_x + dx, new_y + dy):
+
                             possible_jumps.append(
                                 MoveNode(
                                     piece,
@@ -273,6 +281,13 @@ class Board:
                             break
 
         return possible_jumps
+
+    def can_get_promoted(self, piece: Piece, to_tile: tuple):
+        if piece.color == EColor.white and to_tile[1] == board_size - 1:
+            return True
+        if piece.color == EColor.black and to_tile[1] == 0:
+            return True
+        return False
 
     def every_move_possible_for_piece(self, piece: Piece, hasJumped: Piece = None):
         # Get both possible moves and jumps for the piece
@@ -760,6 +775,43 @@ class Board:
                     board_representation += ". "
             board_representation += "\n"
         return board_representation
+
+    @staticmethod
+    def serialize_move_node(move_node):
+        serialized = {
+            "piece": [
+                "king" if isinstance(move_node.piece, King) else "pawn",
+                move_node.piece.color,
+            ],
+            "from_tile": move_node.from_tile,
+            "to_tile": move_node.to_tile,
+            "killed": move_node.killed.tile if move_node.killed else None,
+            "promoted": move_node.promoted,
+            "children": [
+                MoveNode.serialize_move_node(child) for child in move_node.children
+            ],
+            "parent": None,
+        }
+        return serialized
+
+    def unserialize_move_node(self, serialized):
+        piece_type, color = serialized["piece"]
+        piece = King((0, 0), color) if piece_type == "king" else Pawn((0, 0), color)
+        piece.tile = serialized["from_tile"]
+        killed = (
+            self.get_piece_at_tile(serialized["killed"])
+            if serialized["killed"]
+            else None
+        )
+        move_node = MoveNode(
+            piece,
+            serialized["from_tile"],
+            serialized["to_tile"],
+            killed,
+            serialized["promoted"],
+            [self.unserialize_move_node(child) for child in serialized["children"]],
+        )
+        return move_node
 
 
 # TODO undo board_history when undoing moves

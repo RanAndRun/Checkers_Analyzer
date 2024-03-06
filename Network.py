@@ -1,38 +1,35 @@
 import socket
 import pickle
 
-HEADER = 64
-FORMAT = "utf-8"
-
 
 class Network:
     def __init__(self, server_address=("localhost", 12345)):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_address = server_address
+        self.port = server_address[1]
         self.addr = server_address
-        self.id = self.connect()
+        self.id = None  # Initialize ID to None
 
     def connect(self):
-        try:
-            self.client.connect(self.addr)
-            message_length = self.client.recv(HEADER).decode(FORMAT)
-            if message_length:
-                message_length = int(message_length)
-                return pickle.loads(self.client.recv(message_length))
-        except Exception as e:
-            print(e)
+        if self.id is None:  # Check if already connected
+            try:
+                self.client.connect(self.addr)
+                self.id = pickle.loads(
+                    self.client.recv(2048)
+                )  # Deserialize the received data
+            except Exception as e:
+                print(e)
+        return self.id
 
     def send(self, data):
         try:
-            serialized_data = pickle.dumps(data)
-            send_length = str(len(serialized_data)).encode(FORMAT)
-            send_length += b" " * (HEADER - len(send_length))
-            self.client.send(send_length)
-            self.client.send(serialized_data)
-            message_length = self.client.recv(HEADER).decode(FORMAT)
-            if message_length:
-                message_length = int(message_length)
-                return pickle.loads(self.client.recv(message_length))
+            self.client.send(pickle.dumps(data))
+        except socket.error as e:
+            print(e)
+
+    def receive(self):
+        try:
+            return pickle.loads(self.client.recv(2048))
         except socket.error as e:
             print(e)
 
