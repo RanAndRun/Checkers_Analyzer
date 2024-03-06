@@ -4,6 +4,7 @@ from Board import *
 from time import sleep
 from Enums import EColor
 from BoardNode import BoardNode
+from Network import Network
 import math
 
 from CheckersAI import CheckersAI
@@ -97,45 +98,69 @@ def draw_arrow(screen, from_coordinates, to_coordinates):
 
 
 def display_analysis(screen, game_analysis, history, analysis_color):
-    running = True
-    # Create a new board instance for displaying analysis
-    analysis_board = Board(screen)
 
-    move_index = 0  # Keep track of the current move index
-
-    screen.fill((255, 255, 255))
-    analysis_board.draw(screen)
-    pygame.display.update()
-    pygame.time.wait(3000)
-    analysis_played_move = None
-    amount_of_moves = len(history)
-    while running:
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-        sleep(2)
-        if move_index < amount_of_moves and move_index < len(game_analysis):
-            analysis_played_move = game_analysis[move_index]
-            if analysis_played_move[0].piece.color == analysis_color:
-                played_move, move_score, best_move_score, best_move = game_analysis[
-                    move_index
-                ]
-                print("played move", played_move, "best move", best_move)
-                analysis_board.apply_move(best_move)
-                sleep(2)
-                analysis_board.undo_move()
-                sleep(2)
-
-                analysis_board.apply_move(played_move)
-                sleep(2)
-
-            else:
-                played_move = history[move_index][0]
-                analysis_board.apply_move(played_move)
-            # analysis_board.apply_move(history[move_index][0])
-            move_index += 1
+    def update():
+        screen.fill((255, 255, 255))
+        analysis_board.draw(screen)
         pygame.display.update()
+
+    running = True
+    analysis_board = Board(screen)
+    update()
+    move_index = 0
+    analysis_move_index = 0
+    display_state = "start"  # Can be 'start', 'played_move', 'best_move'
+    last_update_time = pygame.time.get_ticks()
+
+    while running:
+        current_time = pygame.time.get_ticks()
+        if current_time - last_update_time > 1500 and move_index < len(
+            history
+        ):  # 1.5 seconds per move
+            last_update_time = current_time
+            if move_index < len(history):
+                current_move, _ = history[move_index]
+
+                if display_state == "start":
+                    # Reset the board to the start of the current move
+
+                    # analysis_board.set_history(history[:move_index])
+
+                    if current_move.piece.color == analysis_color:
+                        played_move, move_score, best_move_score, best_move = (
+                            game_analysis[analysis_move_index]
+                        )
+                        analysis_move_index += 1
+
+                        # Apply the best move for display
+                        analysis_board.apply_move(best_move)
+                        display_state = "best_move"
+                        update()
+                        sleep(1)
+                    else:
+                        # Apply the actual move made by the player
+                        analysis_board.apply_move(current_move)
+                        display_state = "played_move"
+
+                elif display_state == "best_move":
+                    # Undo the best move and apply the actual move played
+                    analysis_board.undo_move()
+                    update()
+                    sleep(1)
+                    analysis_board.apply_move(played_move)
+                    display_state = "played_move"
+
+                elif display_state == "played_move":
+                    # Ready for the next move
+                    move_index += 1
+                    display_state = "start"
+
+                update()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    running = False
 
 
 def main():
@@ -143,6 +168,8 @@ def main():
     mouse_y = 0  # y cordinate
     board = Board(screen)
     checkers_ai = CheckersAI(board)
+    network = Network()
+    network.connect()
     first_selection = None
     second_selection = None
     is_white_to_play = True
@@ -181,10 +208,10 @@ def main():
                     is_white_to_play = not is_white_to_play
 
                 elif event.key == pygame.K_p:  # Check if 'P' key is pressed
-                    node = BoardNode(board)
-                    best_move = checkers_ai.find_best_move(None)
+                    best_move = checkers_ai.find_best_move(is_max=is_white_to_play)
                     print(best_move)
                     board.apply_move(best_move[0])
+                    is_white_to_play = not is_white_to_play
 
                 elif event.key == pygame.K_q:  # Check if 'Q' key is pressed
                     history = board.get_history()

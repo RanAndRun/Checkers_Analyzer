@@ -5,6 +5,7 @@ from Pawn import Pawn
 from Enums import EColor
 from config import window_width, window_height, board_size
 from os import path
+from config import window_width, window_height
 
 from King import King
 from Piece import Piece
@@ -15,6 +16,8 @@ class Board:
 
     tile_width, tile_height = window_width // board_size, window_height // board_size
     board_image = pygame.image.load(path.join("assets", "8x8_checkered_board.png"))
+    size = (window_width, window_height)
+    board_image = pygame.transform.scale(board_image, size)
 
     pieces_list = [[], []]
     get_pawn_from_tile = {}
@@ -318,7 +321,7 @@ class Board:
                             piece.color == EColor.white
                             and jump_move.to_tile[1] == board_size - 1
                         ) or (
-                            piece.color == EColor.black and jump_move.to_tile[1] != 0
+                            piece.color == EColor.black and jump_move.to_tile[1] == 0
                         ):
                             promoted = True
 
@@ -358,7 +361,7 @@ class Board:
                     if (
                         piece.color == EColor.white
                         and move.to_tile[1] == board_size - 1
-                    ) or (piece.color == EColor.black and move.to_tile[1] != 0):
+                    ) or (piece.color == EColor.black and move.to_tile[1] == 0):
                         promoted = True
                     new_node = MoveNode(
                         piece,
@@ -424,6 +427,7 @@ class Board:
             return move, None
 
     def apply_move(self, move_node: MoveNode):
+        self.add_move_to_history(move_node)
         while move_node:
             x, y = move_node.from_tile
             move_node.piece = self.pieces_matrix[y][x]
@@ -506,8 +510,8 @@ class Board:
             self.pieces_matrix[from_tile_y][from_tile_x] = moved_piece
             self.pieces_matrix[to_tile_y][to_tile_x] = None
             moved_piece.tile = move_node.from_tile
-        else:
-            print(f"No piece found at {move_node.to_tile} to move back")
+        # else:
+        #     print(f"No piece found at {move_node.to_tile} to move back")
 
         # Restore the captured piece, if any
         if move_node.killed:
@@ -733,7 +737,12 @@ class Board:
             history.append((self.move_history[counter], self.board_history[counter]))
         return history
 
-    def set_history(self, move_history, board_history):
+    def set_history(self, history: list[tuple[MoveNode, "Board"]]):
+        move_history = []
+        board_history = []
+        for move, board in history:
+            move_history.append(move)
+            board_history.append(board)
         self.move_history = move_history
         self.board_history = board_history
 

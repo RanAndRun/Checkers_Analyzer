@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class CheckersAI:
-    def __init__(self, board, depth=1):
+    def __init__(self, board, depth=2):
         self.board = board
         self.depth = depth
 
@@ -49,13 +49,14 @@ class CheckersAI:
             node.value = minEval
             return minEval
 
-    def find_best_move(self, board=None, depth=None):
+    def find_best_move(self, board=None, depth=None, is_max=True):
         if board is None:
             board = self.board
         if depth is None:
             depth = self.depth
+
         root_node = BoardNode(board)
-        best_value = float("-inf")
+        best_value = float("-inf") if is_max else float("inf")
         best_move = None
         futures = []
 
@@ -67,13 +68,15 @@ class CheckersAI:
                     depth,
                     float("-inf"),
                     float("inf"),
-                    True if board.current_player == EColor.white else False,
+                    not is_max,  # Swap maximizingPlayer if is_max is False
                 )
                 futures.append((future, child.move))
 
             for future, move in futures:
                 value = future.result()
-                if value > best_value:
+                if (is_max and value > best_value) or (
+                    not is_max and value < best_value
+                ):
                     best_value = value
                     best_move = move
 
@@ -125,17 +128,21 @@ class CheckersAI:
 
         # Iterate over each move and corresponding board state
         for move, board in history:
+
+            move.piece = board.get_piece_at_tile(move.from_tile)
+            if move.killed is not None:
+                move.killed = board.get_piece_at_tile(move.killed.tile)
+            print(move.piece, "move")
             # Skip if the move's piece color doesn't match the specified color
             if move.piece.color != color:
                 print("history color not matching", move.piece.color, color)
                 continue
             # Perform evaluation and comparison for the move
-            move_score, best_move_score, best_move = self.evaluate_and_compare_move(
-                move, board
-            )
+            played_move_score, best_value, best_move = self.compare_move(move, board)
 
             # Append the results to the analysis_results list
-            analysis_results.append((move, move_score, best_move_score, best_move))
+
+            analysis_results.append((move, played_move_score, best_value, best_move))
         print("results", analysis_results)
         return analysis_results
 
@@ -151,7 +158,8 @@ class CheckersAI:
         return score
 
     def compare_move(self, move, board):
-        best_move, best_value = self.find_best_move(board=board)
+        is_max = True if move.piece.color == EColor.white else False
+        best_move, best_value = self.find_best_move(board=board, is_max=is_max)
         played_move_score = self.find_move_score(move, board)
 
         return played_move_score, best_value, best_move

@@ -20,6 +20,9 @@ class Piece:
         else:
             self.image = pygame.image.load(black_img_path)
 
+        size = (window_width / 8, window_height / 8)
+        self.image = pygame.transform.scale(self.image, size)
+
     def move(self, to_tile: tuple[int, int]):
         self.tile = to_tile
 
