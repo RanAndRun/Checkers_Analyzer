@@ -24,7 +24,7 @@ pygame.init()
 
 screen = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption("Checkers_Analyzer")
-game_online = True
+game_online = False
 
 if game_online:
     network = Network()
@@ -71,6 +71,7 @@ def handle_mouse_click(
                     if move.from_tile == first_selection
                     and move.to_tile == clicked_location
                 )
+                print("move", move)
                 move_node = MoveNode(
                     selected_piece,
                     first_selection,
@@ -97,7 +98,6 @@ def handle_mouse_click(
                 else:
                     is_white_to_play = not is_white_to_play
                     hasJumped = None
-                    board.add_move_to_history(before_move)
                     before_move = None
 
                     # Handle online game state update
@@ -255,7 +255,6 @@ def main():
         # Check if one second has passed
         if timer >= 2000:  # 1000 milliseconds = 1 second
             timer = 0
-            print(board.current_player)
 
         board.draw(screen)
         mouse_clicked = False
@@ -273,6 +272,7 @@ def main():
                 mouse_clicked = True
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_k:  # Check if 'K' key is pressed
+                    print(board.move_history)
                     board.undo_move()
                     is_white_to_play = not is_white_to_play
 
@@ -372,6 +372,55 @@ def main():
                 x, y = first_selection
                 board.tiles[y][x].glow_blue(screen)
 
+        if not game_online:
+            if mouse_on_tile:
+                x, y = mouse_on_tile.get_location()
+                mouse_on_pawn = board.pieces_matrix[y][x]
+                if mouse_on_pawn and mouse_on_pawn.color == (
+                    EColor.white if is_white_to_play else EColor.black
+                ):
+                    board.show_avilable_moves(
+                        mouse_on_tile.get_location(), hasJumped, screen
+                    )
+                if (
+                    mouse_clicked
+                    and mouse_on_pawn
+                    and mouse_on_pawn.color
+                    == (EColor.white if is_white_to_play else EColor.black)
+                ):
+                    (
+                        first_selection,
+                        is_white_to_play,
+                        hasJumped,
+                        before_move,
+                    ) = handle_mouse_click(
+                        board,
+                        mouse_on_tile,
+                        first_selection,
+                        is_white_to_play,
+                        hasJumped,
+                        before_move,
+                    )
+
+                elif mouse_clicked:
+                    (
+                        first_selection,
+                        is_white_to_play,
+                        hasJumped,
+                        before_move,
+                    ) = handle_mouse_click(
+                        board,
+                        mouse_on_tile,
+                        first_selection,
+                        is_white_to_play,
+                        hasJumped,
+                        before_move,
+                    )
+
+            if first_selection:
+                board.show_avilable_moves(first_selection, hasJumped, screen)
+                x, y = first_selection
+                board.tiles[y][x].glow_blue(screen)
         # Assuming you have a lock defined somewhere in your code
 
         if analysis_started:

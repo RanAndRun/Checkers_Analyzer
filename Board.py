@@ -167,7 +167,7 @@ class Board:
                 if not self.is_location_inside_board(new_x, new_y):
                     continue
                 if not self.is_tile_taken(new_x, new_y):
-                    promoted = self.can_get_promoted(piece, (new_x + dx, new_y + dy))
+                    promoted = self.can_get_promoted(piece, (new_x, new_y))
                     possible_tiles.append(
                         MoveNode(piece, piece.tile, (new_x, new_y), promoted=promoted)
                     )
@@ -206,6 +206,9 @@ class Board:
         return self.pieces_matrix[y][x] and self.pieces_matrix[y][x].color == EColor(
             3 - color.value
         )
+
+    def is_a_color_pawn_on_tile(self, x, y, color):
+        return self.pieces_matrix[y][x] and self.pieces_matrix[y][x].color == color
 
     def where_can_jump(self, tile: tuple):
         piece = self.get_piece_at_tile(tile)
@@ -255,7 +258,9 @@ class Board:
                 for step in range(1, board_size):
                     new_x, new_y = x + step * dx, y + step * dy
 
-                    if not self.is_location_inside_board(new_x, new_y):
+                    if not self.is_location_inside_board(
+                        new_x, new_y
+                    ) or self.is_a_color_pawn_on_tile(new_x, new_y, piece.color):
                         break
                     if (
                         self.is_tile_taken(new_x, new_y)
