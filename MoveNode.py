@@ -36,6 +36,8 @@ class MoveNode:
             move_details += f", capturing piece at {self.killed.tile}"
         if self.promoted:
             move_details += ", piece promoted"
+        if self.children:
+            move_details += f", children: {len(self.children)}"
         return move_details
 
     def __deepcopy__(self, memo):

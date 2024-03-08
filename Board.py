@@ -793,7 +793,7 @@ class Board:
             "killed": move_node.killed.tile if move_node.killed else None,
             "promoted": move_node.promoted,
             "children": [
-                MoveNode.serialize_move_node(child) for child in move_node.children
+                Board.serialize_move_node(child) for child in move_node.children
             ],
             "parent": None,
         }

@@ -24,7 +24,9 @@ pygame.init()
 
 screen = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption("Checkers_Analyzer")
-game_online = False
+
+
+game_online = False  # Set to True to play online
 
 if game_online:
     network = Network()
@@ -96,15 +98,24 @@ def handle_mouse_click(
                 if move_node.killed and board.has_more_jumps(clicked_location):
                     hasJumped = selected_piece
                 else:
-                    is_white_to_play = not is_white_to_play
-                    hasJumped = None
-                    before_move = None
 
                     # Handle online game state update
                     if game_online:
-                        print("Sending move", move_node)
-                        simplified_move_node = Board.serialize_move_node(move_node)
-                        network.send(simplified_move_node)
+                        print("before move", before_move)
+                        if before_move:
+                            print("Sending move", before_move)
+                            simplified_move_node = Board.serialize_move_node(
+                                before_move
+                            )
+                            network.send(simplified_move_node)
+                        else:
+                            print("Sending move", move_node)
+                            simplified_move_node = Board.serialize_move_node(move_node)
+                            network.send(simplified_move_node)
+
+                    is_white_to_play = not is_white_to_play
+                    hasJumped = None
+                    before_move = None
 
         first_selection = None
     return first_selection, is_white_to_play, hasJumped, before_move
