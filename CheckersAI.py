@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class CheckersAI:
-    def __init__(self, board, depth=2):
+    def __init__(self, board, depth=1):
         self.board = board
         self.depth = depth
 

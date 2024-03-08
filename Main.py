@@ -11,6 +11,7 @@ import threading
 from CheckersAI import CheckersAI
 from config import window_width, window_height, board_size
 
+move_lock = threading.Lock()
 
 FPS = 30
 fps_clock = pygame.time.Clock()
@@ -23,10 +24,14 @@ pygame.init()
 
 screen = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption("Checkers_Analyzer")
-game_online = False
+game_online = True
 
 if game_online:
     network = Network()
+
+is_white_to_play = True
+
+move_lock = threading.Lock()
 
 
 def handle_mouse_click(
@@ -43,6 +48,7 @@ def handle_mouse_click(
     else:
         # Handle second selection
         selected_piece = board.get_piece_at_tile(first_selection)
+        move_exists = False
         if selected_piece:
             moves_possible, jumps_possible = board.every_move_possible_for_piece(
                 selected_piece, hasJumped
@@ -50,10 +56,14 @@ def handle_mouse_click(
             if jumps_possible:
                 moves_possible = jumps_possible
 
-            move_exists = any(
-                move.from_tile == first_selection and move.to_tile == clicked_location
-                for move in moves_possible
-            )
+            for move in moves_possible:
+                if (
+                    move.from_tile == first_selection
+                    and move.to_tile == clicked_location
+                ):
+                    move_exists = True
+                    break
+
             if move_exists:
                 move = next(
                     move
@@ -86,18 +96,17 @@ def handle_mouse_click(
                     hasJumped = selected_piece
                 else:
                     is_white_to_play = not is_white_to_play
-                    board.switch_player()
                     hasJumped = None
                     board.add_move_to_history(before_move)
                     before_move = None
 
                     # Handle online game state update
                     if game_online:
+                        print("Sending move", move_node)
                         simplified_move_node = Board.serialize_move_node(move_node)
                         network.send(simplified_move_node)
 
         first_selection = None
-
     return first_selection, is_white_to_play, hasJumped, before_move
 
 
@@ -191,24 +200,52 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     running = False
 
 
+def receive_moves_forever(board, network):
+    global is_white_to_play
+    global move_lock
+    while True:  # Continuous loop
+        try:
+            msg = network.receive()
+            if msg:
+                move = board.unserialize_move_node(msg)
+                print(f"Received move: {msg}")
+                board.apply_move(move)
+                with move_lock:  # Ensure thread-safe access to is_white_to_play
+                    is_white_to_play = not is_white_to_play
+                pygame.display.update()
+                print("board color", board.current_player)
+                print("is white to play", is_white_to_play)
+                print("color player", player_color)
+        except Exception as e:
+            print(f"Error receiving move: {e}")
+
+
 def main():
+    global is_white_to_play
+    global game_online
+    global move_lock
+    global network
+    global player_color
+    receive_thread = None
+
+    first_selection = None
+    second_selection = None
+    if game_online:
+        player_color = network.connect()
+    # Declare global to modify the global variable
+    print(is_white_to_play)
+    hasJumped = None
+    run = True
+
     mouse_x = 0  # store x cordinate of mouse event
     mouse_y = 0  # y cordinate
     board = Board(screen)
     checkers_ai = CheckersAI(board)
 
-    first_selection = None
-    second_selection = None
-    is_white_to_play = True
-    if game_online:
-        is_white_to_play = network.connect()
-    player_color = is_white_to_play
-    print(is_white_to_play)
-    hasJumped = None
-    run = True
     timer = 0
     before_move = None
     analysis_started = False
+
     while run:
 
         timer += fps_clock.tick_busy_loop(
@@ -218,6 +255,7 @@ def main():
         # Check if one second has passed
         if timer >= 2000:  # 1000 milliseconds = 1 second
             timer = 0
+            print(board.current_player)
 
         board.draw(screen)
         mouse_clicked = False
@@ -271,8 +309,20 @@ def main():
                 elif event.key == pygame.K_t:  # Check if 'P' key is pressed
                     moves_made = board.get_history()[0]
                     print(checkers_ai.find_best_move(EColor.white, None))
+
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
-        if player_color == is_white_to_play or not game_online:
+
+        # Start the thread when initializing your game
+        if game_online:
+            receive_thread = threading.Thread(
+                target=receive_moves_forever, args=(board, network)
+            )
+            receive_thread.daemon = (
+                True  # The thread will close when the main program exits
+            )
+            receive_thread.start()
+
+        if game_online and is_white_to_play == player_color:
             if mouse_on_tile:
                 x, y = mouse_on_tile.get_location()
                 mouse_on_pawn = board.pieces_matrix[y][x]
@@ -322,22 +372,8 @@ def main():
                 x, y = first_selection
                 board.tiles[y][x].glow_blue(screen)
 
-        elif game_online:
+        # Assuming you have a lock defined somewhere in your code
 
-            def receive_move():
-                try:
-                    msg = network.receive()
-                    if msg:
-                        move = board.unserialize_move_node(msg)
-                        print("move", move)
-                        board.apply_move(move)
-                        is_white_to_play = not is_white_to_play
-                        pygame.display.update()
-                except Exception as e:
-                    print(f"Error: {e}")
-
-            receive_thread = threading.Thread(target=receive_move)
-            receive_thread.start()
         if analysis_started:
             history = board.get_history()
             color = EColor.white
