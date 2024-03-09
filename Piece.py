@@ -59,7 +59,7 @@ class Piece:
     def __repr__(self):
         position = f"({self.tile[0]}, {self.tile[1]})" if self.tile else "None"
         status = "Alive" if self.alive else "Killed"
-        return f"{self.color.name} at {position} - {status}!"
+        return f"{self.color.name} {type(self).__name__} at {position} - {status}!"
 
     def __deepcopy__(self, memo):
         # Create an instance of the correct subclass

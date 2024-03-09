@@ -37,87 +37,60 @@ move_lock = threading.Lock()
 
 
 def handle_mouse_click(
-    board, clicked_tile, first_selection, is_white_to_play, hasJumped, before_move
+    board: Board,
+    clicked_tile: Tile,
+    first_selection,
+    is_white_to_play,
+    hasJumped,
+    before_move,
 ):
-    clicked_location = clicked_tile.get_location()
-    clicked_piece = board.get_piece_at_tile(clicked_location)
-    current_color = EColor.white if is_white_to_play else EColor.black
-
+    x, y = clicked_tile.get_location()
     if first_selection is None:
-        # Handle first selection
-        if clicked_piece and clicked_piece.color == current_color:
-            first_selection = clicked_location
+        # Select a piece if it belongs to the current player
+        if board.pieces_matrix[y][x] and board.pieces_matrix[y][x].color == (
+            EColor.white if is_white_to_play else EColor.black
+        ):
+            first_selection = (x, y)
     else:
-        # Handle second selection
-        selected_piece = board.get_piece_at_tile(first_selection)
+        # Attempt to move the selected piece
+        piece = board.get_piece_at_tile(first_selection)
         move_exists = False
-        if selected_piece:
+        if piece:
             moves_possible, jumps_possible = board.every_move_possible_for_piece(
-                selected_piece, hasJumped
+                piece, hasJumped
             )
-            if jumps_possible:
-                moves_possible = jumps_possible
+            possible_moves = jumps_possible if jumps_possible else moves_possible
 
-            for move in moves_possible:
-                if (
-                    move.from_tile == first_selection
-                    and move.to_tile == clicked_location
-                ):
+            for move in possible_moves:
+                if move.to_tile == (x, y):
                     move_exists = True
                     break
 
             if move_exists:
-                move = next(
-                    move
-                    for move in moves_possible
-                    if move.from_tile == first_selection
-                    and move.to_tile == clicked_location
-                )
-                print("move", move)
-                move_node = MoveNode(
-                    selected_piece,
-                    first_selection,
-                    clicked_location,
-                    move.killed,
-                    move.promoted,
-                    move.children,
-                    move.parent,
-                )
-                board.apply_move(move_node)
+                move, hasJumped = board.move(first_selection, (x, y), hasJumped, screen)
 
-                # Update the move sequence
                 if before_move:
                     last_node = before_move
                     while last_node.children:
-                        last_node = last_node.children[0]
-                    last_node.add_child(move_node)
+                        last_node = last_node.children[
+                            0
+                        ]  # Get to the end of the sequence
+                    last_node.add_child(move)  # Append the new move to the sequence
                 else:
-                    before_move = move_node
+                    before_move = move
 
-                # Check and update the game state
-                if move_node.killed and board.has_more_jumps(clicked_location):
-                    hasJumped = selected_piece
-                else:
-
-                    # Handle online game state update
-                    if game_online:
-                        print("before move", before_move)
-                        if before_move:
-                            print("Sending move", before_move)
-                            simplified_move_node = Board.serialize_move_node(
-                                before_move
-                            )
-                            network.send(simplified_move_node)
-                        else:
-                            print("Sending move", move_node)
-                            simplified_move_node = Board.serialize_move_node(move_node)
-                            network.send(simplified_move_node)
-
+                if not hasJumped or not board.has_more_jumps((x, y)):
                     is_white_to_play = not is_white_to_play
+                    board.switch_player()
+                    board.add_move_to_history(before_move)
+                    if game_online:
+                        simplified_move_node = Board.serialize_move_node(before_move)
+                        network.send(simplified_move_node)
                     hasJumped = None
                     before_move = None
 
         first_selection = None
+
     return first_selection, is_white_to_play, hasJumped, before_move
 
 

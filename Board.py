@@ -153,7 +153,7 @@ class Board:
         x, y = tile
         possible_tiles = []
 
-        if type(piece) == Pawn and piece.alive:
+        if isinstance(piece, Pawn) and piece.alive:
             directions = (
                 [(1, 1), (-1, 1)],
                 [(1, -1), (-1, -1)],
@@ -164,15 +164,15 @@ class Board:
                 dx, dy = direction
                 found = False
                 new_x, new_y = x + dx, y + dy
-                if not self.is_location_inside_board(new_x, new_y):
-                    continue
-                if not self.is_tile_taken(new_x, new_y):
+                if self.is_location_inside_board(
+                    new_x, new_y
+                ) and not self.is_tile_taken(new_x, new_y):
                     promoted = self.can_get_promoted(piece, (new_x, new_y))
                     possible_tiles.append(
                         MoveNode(piece, piece.tile, (new_x, new_y), promoted=promoted)
                     )
 
-        if type(piece) == King and piece.alive:
+        if isinstance(piece, King) and piece.alive:
             directions = [
                 (1, 1),
                 (-1, 1),
@@ -219,8 +219,7 @@ class Board:
             directions = ([(1, 1), (-1, 1)], [(1, -1), (-1, -1)])
             directions = directions[piece.color.value - 1]
 
-            for direction in directions:
-                dx, dy = direction
+            for dx, dy in directions:
                 new_x, new_y = x + dx, y + dy
                 jump_x, jump_y = x + 2 * dx, y + 2 * dy
 
@@ -231,9 +230,7 @@ class Board:
                         new_x, new_y
                     ) and self.is_opponent_pawn_on_tile(new_x, new_y, piece.color):
                         if not self.is_tile_taken(jump_x, jump_y):
-                            promoted = self.can_get_promoted(
-                                piece, (new_x + dx, new_y + dy)
-                            )
+                            promoted = self.can_get_promoted(piece, (jump_x, jump_y))
                             possible_jumps.append(
                                 MoveNode(
                                     piece,
@@ -244,7 +241,7 @@ class Board:
                                 )
                             )
 
-        if isinstance(piece, King) and piece.alive:
+        elif isinstance(piece, King) and piece.alive:
             directions = [
                 (1, 1),
                 (-1, 1),
@@ -252,8 +249,7 @@ class Board:
                 (-1, -1),
             ]
 
-            for direction in directions:
-                dx, dy = direction
+            for dx, dy in directions:
                 found = None
                 for step in range(1, board_size):
                     new_x, new_y = x + step * dx, y + step * dy
@@ -287,10 +283,14 @@ class Board:
 
         return possible_jumps
 
-    def can_get_promoted(self, piece: Piece, to_tile: tuple):
+    def can_get_promoted(self, piece: Piece, to_tile: tuple) -> bool:
         if piece.color == EColor.white and to_tile[1] == board_size - 1:
+            print("can get promoted", piece, to_tile, piece.color)
+
             return True
-        if piece.color == EColor.black and to_tile[1] == 0:
+        elif piece.color == EColor.black and to_tile[1] == 0:
+            print("can get promoted", piece, to_tile, piece.color)
+
             return True
         return False
 
@@ -446,8 +446,10 @@ class Board:
             # Switch player if no more jumps are available
             return move, None
 
-    def apply_move(self, move_node: MoveNode):
-        self.add_move_to_history(move_node)
+    def apply_move(self, move_node: MoveNode, has_jumped: Piece = None):
+        if has_jumped is None:
+            self.add_move_to_history(move_node)
+            self.switch_player()
         while move_node:
             x, y = move_node.from_tile
             move_node.piece = self.pieces_matrix[y][x]
@@ -461,8 +463,6 @@ class Board:
                 move_node = move_node.children[0]
             else:
                 move_node = None
-
-        self.switch_player()
 
     def _execute_move(self, move_node: MoveNode):
 
@@ -541,8 +541,9 @@ class Board:
             self.pieces_matrix[captured_piece_y][captured_piece_x] = captured_piece
             captured_piece.alive = True
             self.pieces_list[captured_piece.color.value - 1].append(captured_piece)
-        if move_node.promoted is True:
-            self.demote_king_to_pawn(move_node.piece, move_node.from_tile)
+        if move_node.promoted is True and isinstance(moved_piece, King):
+            king = self.get_piece_at_tile(move_node.from_tile)
+            self.demote_king_to_pawn(king, move_node.from_tile)
 
     # Game State and Rules
 
@@ -612,15 +613,29 @@ class Board:
         self.pieces_matrix[y][x] = king
         self.pieces_list[piece.color.value - 1].remove(piece)
         self.pieces_list[piece.color.value - 1].append(king)
+
+        print("adding king to pieces_list", king, piece.color.value - 1)
         piece.alive = False
 
     def demote_king_to_pawn(self, king, original_tile):
+        # print("list before demoting", self.pieces_list[king.color.value - 1])
+        print("demoting king to pawn")
+        print(king, original_tile)
+        print(
+            "piece in original tile",
+            self.pieces_matrix[original_tile[1]][original_tile[0]],
+        )
         x, y = original_tile
         if isinstance(king, King):
             pawn = Pawn(original_tile, king.color)  # Recreate the pawn
             self.pieces_matrix[y][x] = pawn
-            self.pieces_list[king.color.value - 1].remove(king)
-            self.pieces_list[pawn.color.value - 1].append(pawn)
+            try:
+                self.pieces_list[king.color.value - 1].remove(king)
+                self.pieces_list[pawn.color.value - 1].append(pawn)
+            except ValueError:
+                print("ValueError: King not found in pieces_list")
+                print("king", king, "original tile", original_tile)
+                print("pieces_list", self.pieces_list)
 
     def piece_can_be_taken(self, piece):
         # Check if any opponent can jump over the piece

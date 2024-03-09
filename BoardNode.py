@@ -24,16 +24,13 @@ class BoardNode:
             new_board.apply_move(move)
 
             children_states.append(BoardNode(new_board, move, self))
-
         return children_states
 
     def __repr__(self):
-        board_representation = ""
-
+        board_representation = "\n"
         for y in reversed(range(board_size)):
             for x in range(board_size):
-                tile = self.board.tiles[y][x]
-                piece = self.board.get_pawn_from_tile.get(tile)
+                piece = self.board.pieces_matrix[y][x]
                 if piece:
                     if piece.color == EColor.white:
                         board_representation += "W "
@@ -42,7 +39,7 @@ class BoardNode:
                 else:
                     board_representation += ". "
             board_representation += "\n"
-        return board_representation
+        return board_representation + "\n"
 
 
 # TODO watch mandetory jump

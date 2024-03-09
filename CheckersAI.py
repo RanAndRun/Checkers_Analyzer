@@ -30,7 +30,8 @@ class CheckersAI:
 
         if maximizingPlayer:
             maxEval = float("-inf")
-            for child in node.get_children():
+            children = node.get_children()
+            for child in children:
                 eval = self.minimax(child, depth - 1, alpha, beta, False)
                 maxEval = max(maxEval, eval)
                 alpha = max(alpha, eval)
@@ -40,7 +41,8 @@ class CheckersAI:
             return maxEval
         else:
             minEval = float("inf")
-            for child in node.get_children():
+            children = node.get_children()
+            for child in children:
                 eval = self.minimax(child, depth - 1, alpha, beta, True)
                 minEval = min(minEval, eval)
                 beta = min(beta, eval)
@@ -61,7 +63,10 @@ class CheckersAI:
         futures = []
 
         with ThreadPoolExecutor() as executor:
-            for child in root_node.get_children():
+            children = root_node.get_children()
+            for child in children:
+                if len(children) == 1:
+                    depth = 0
                 future = executor.submit(
                     self.minimax,
                     child,
