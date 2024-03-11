@@ -28,8 +28,6 @@ class MoveNode:
         child.parent = self
         self.children.append(child)
 
-
-
     def __repr__(self):
         move_details = f"Move from {self.from_tile} to {self.to_tile}"
         if self.killed:
@@ -57,3 +55,36 @@ class MoveNode:
             new_children,
             self.parent,
         )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, MoveNode):
+            return False
+
+        # Compare simple attributes
+        if not (
+            self.piece.tile == other.piece.tile
+            and self.from_tile == other.from_tile
+            and self.to_tile == other.to_tile
+            and self.promoted == other.promoted
+        ):
+            return False
+
+        # Compare killed pieces
+        if (self.killed is None) != (
+            other.killed is None
+        ):  # One is None, the other isn't
+            return False
+        if self.killed and not self.killed.tile == other.killed.tile:
+            return False
+
+        # Compare children
+        # if len(self.children) != len(other.children):
+        #     return False
+        # for self_child, other_child in zip(self.children, other.children):
+        #     if self_child != other_child:
+        #         return False
+
+        # Optionally, compare parent if needed
+        # Note: Be careful with comparing parents to avoid circular reference issues.
+
+        return True

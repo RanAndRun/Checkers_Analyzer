@@ -32,6 +32,15 @@ class Tile:
     def glow_blue(self, screen):
         pygame.draw.rect(screen, (31, 81, 255), self.tile_rect, 5)
 
+    def glow_best_tile(self, screen, is_best):
+        if not is_best:
+            pygame.draw.rect(screen, (64, 224, 208, 128), self.tile_rect, 10)
+        else:
+            pygame.draw.rect(screen, (0, 225, 0, 128), self.tile_rect, 10)
+
+    def glow_best_piece(self, screen):
+        pygame.draw.rect(screen, (255, 215, 0, 128), self.tile_rect, 10)
+
     def __repr__(self):
         return f"Tile(x={self.column}, y={self.row})"
 

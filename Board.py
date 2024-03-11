@@ -119,6 +119,15 @@ class Board:
                 if pawn and pawn.is_alive():
                     self.pieces_matrix[tile_y][tile_x].draw(screen)
 
+    def show_better_move(self, move: MoveNode, screen, is_best):
+        if move is None:
+            print("No move to show")
+            return
+        from_tile_x, from_tile_y = move.from_tile
+        to_tile_x, to_tile_y = move.to_tile
+        self.tiles[from_tile_y][from_tile_x].glow_best_piece(screen)
+        self.tiles[to_tile_y][to_tile_x].glow_best_tile(screen, is_best)
+
     def show_avilable_moves(self, from_tile: tuple, has_jumped: Piece, screen):
         x, y = from_tile
         possible_moves, possible_jumps = self.every_move_possible_for_piece(

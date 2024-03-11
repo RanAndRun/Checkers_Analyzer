@@ -94,94 +94,77 @@ def handle_mouse_click(
     return first_selection, is_white_to_play, hasJumped, before_move
 
 
-def draw_arrow(screen, from_coordinates, to_coordinates):
-    pygame.draw.line(screen, BLACK, from_coordinates, to_coordinates, 2)
-    # Calculate angle between the line and x-axis
-    angle = math.atan2(
-        to_coordinates[1] - from_coordinates[1], to_coordinates[0] - from_coordinates[0]
-    )
-    # Draw arrow head
-    pygame.draw.polygon(
-        screen,
-        RED,
-        [
-            (
-                to_coordinates[0] - 10 * math.cos(angle - math.pi / 6),
-                to_coordinates[1] - 10 * math.sin(angle - math.pi / 6),
-            ),
-            (to_coordinates[0], to_coordinates[1]),
-            (
-                to_coordinates[0] - 10 * math.cos(angle + math.pi / 6),
-                to_coordinates[1] - 10 * math.sin(angle + math.pi / 6),
-            ),
-        ],
-    )
-
-
 def display_analysis(screen, game_analysis, history, analysis_color):
 
-    def update():
-        screen.fill((255, 255, 255))
-        analysis_board.draw(screen)
-        pygame.display.update()
+    def handle_key_events():
+        nonlocal move_index, display_state, analysis_move_index
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    move_index = max(0, move_index - 1)
+                    if len(history) > move_index:
+                        analysis_board.undo_move()
+                        analysis_board.undo_move()
+
+                    display_state = "start"
+                elif event.key == pygame.K_RIGHT:
+
+                    if (
+                        move_index < len(history) - 1
+                    ):  # Checks that we don't go beyond the last move
+                        move_index += 1
+                        display_state = "start"
+        return True
 
     running = True
-    analysis_board = Board(screen)
-    update()
+    analysis_board = Board(screen)  # Assuming this is your custom Board class
     move_index = 0
     analysis_move_index = 0
+
     display_state = "start"  # Can be 'start', 'played_move', 'best_move'
     last_update_time = pygame.time.get_ticks()
+    screen.fill((255, 255, 255))
+    analysis_board.draw(screen)
+    pygame.display.update()
 
     while running:
-        current_time = pygame.time.get_ticks()
-        if current_time - last_update_time > 1500 and move_index < len(
-            history
-        ):  # 1.5 seconds per move
-            last_update_time = current_time
-            if move_index < len(history):
-                current_move, _ = history[move_index]
+        if not handle_key_events():
+            break
 
-                if display_state == "start":
-                    # Reset the board to the start of the current move
+        # if move_index == -1:
+        #     print("move index is -1")
+        if 0 <= move_index < len(history):
+            print(move_index, len(history))
+            current_move, _ = history[move_index]
 
-                    # analysis_board.set_history(history[:move_index])
-
-                    if current_move.piece.color == analysis_color:
-                        played_move, move_score, best_move_score, best_move = (
-                            game_analysis[analysis_move_index]
-                        )
-                        analysis_move_index += 1
-
-                        # Apply the best move for display
-                        analysis_board.apply_move(best_move)
-                        display_state = "best_move"
-                        update()
-                        sleep(1)
-                    else:
-                        # Apply the actual move made by the player
-                        analysis_board.apply_move(current_move)
-                        display_state = "played_move"
-
-                elif display_state == "best_move":
-                    # Undo the best move and apply the actual move played
-                    analysis_board.undo_move()
-                    update()
-                    sleep(1)
+            if display_state == "start":
+                if current_move.piece.color == analysis_color:
+                    is_played_move_best_move = False
+                    played_move, move_score, best_move_score, best_move = game_analysis[
+                        int(move_index / 2)
+                    ]
                     analysis_board.apply_move(played_move)
+                    if best_move.__eq__(played_move):
+                        is_played_move_best_move = True
+
+                    best_move = best_move
+                    display_state = "best_move"
+                    analysis_board.draw(screen)
+                else:
+                    best_move = None
+                    analysis_board.apply_move(current_move)
                     display_state = "played_move"
+                    analysis_board.draw(screen)
+            print("best move", best_move)
+            if best_move is not None:
+                analysis_board.show_better_move(
+                    best_move, screen, is_played_move_best_move
+                )
 
-                elif display_state == "played_move":
-                    # Ready for the next move
-                    move_index += 1
-                    display_state = "start"
-
-                update()
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    running = False
+        pygame.display.update()
 
 
 def receive_moves_forever(board, network):
