@@ -2,7 +2,7 @@ import pygame
 import copy
 from Tile import Tile
 from Pawn import Pawn
-from Enums import EColor
+from Enums import EColor, Ecolors
 from config import window_width, window_height, board_size
 from os import path
 from config import window_width, window_height
@@ -119,14 +119,27 @@ class Board:
                 if pawn and pawn.is_alive():
                     self.pieces_matrix[tile_y][tile_x].draw(screen)
 
-    def show_better_move(self, move: MoveNode, screen, is_best):
+    def show_better_move(self, move: MoveNode, screen):
         if move is None:
             print("No move to show")
             return
         from_tile_x, from_tile_y = move.from_tile
         to_tile_x, to_tile_y = move.to_tile
-        self.tiles[from_tile_y][from_tile_x].glow_best_piece(screen)
-        self.tiles[to_tile_y][to_tile_x].glow_best_tile(screen, is_best)
+        self.tiles[from_tile_y][from_tile_x].glow(screen, Ecolors.blue)
+        self.tiles[to_tile_y][to_tile_x].glow(screen, Ecolors.blue)
+
+    def show_move_made(self, move: MoveNode, screen, is_analyzing_player=True):
+        if move is None:
+            print("No move to show")
+            return
+        from_tile_x, from_tile_y = move.from_tile
+        to_tile_x, to_tile_y = move.to_tile
+        if is_analyzing_player:
+            color = Ecolors.green
+        else:
+            color = Ecolors.red
+        self.tiles[from_tile_y][from_tile_x].glow(screen, color)
+        self.tiles[to_tile_y][to_tile_x].glow(screen, color)
 
     def show_avilable_moves(self, from_tile: tuple, has_jumped: Piece, screen):
         x, y = from_tile
@@ -139,10 +152,10 @@ class Board:
             if type(tile) == list:
                 for to_tile in tile:  # sometimes tile is a tuple, sometimes its a list.
                     x, y = to_tile
-                    self.tiles[y][x].glow_yellow(screen)
+                    self.tiles[y][x].glow(screen, Ecolors.yellow)
             else:
                 x, y = tile
-                self.tiles[y][x].glow_yellow(screen)
+                self.tiles[y][x].glow(screen, Ecolors.yellow)
 
     def get_tile_at_pixel(self, mouse_x, mouse_y):
         for x_tile in range(board_size):

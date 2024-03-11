@@ -2,6 +2,7 @@ from config import window_width, window_height, board_size
 import pygame
 import os
 import copy
+from Enums import Ecolors
 
 
 class Tile:
@@ -25,12 +26,20 @@ class Tile:
     def get_matrix_location(self):
         return self.row, self.column
 
-    def glow_yellow(self, screen):
-        pygame.draw.rect(screen, (255, 255, 0), self.tile_rect, 5)
-        # TODO make it glow for the whole time the first selection is no None
+    def glow(self, screen, color):
 
-    def glow_blue(self, screen):
-        pygame.draw.rect(screen, (31, 81, 255), self.tile_rect, 5)
+        if color == Ecolors.yellow:
+            rgb = (255, 255, 0)
+        elif color == Ecolors.blue:
+            rgb = (31, 81, 255)
+        elif color == Ecolors.green:
+            rgb = (0, 165, 80)
+        elif color == Ecolors.brown:
+            rgb = (165, 42, 42)
+        else:
+            rgb = (255, 0, 0)
+
+        pygame.draw.rect(screen, rgb, self.tile_rect, 5)
 
     def glow_best_tile(self, screen, is_best):
         if not is_best:

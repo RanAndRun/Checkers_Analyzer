@@ -18,7 +18,7 @@ def send(data, client: socket.socket):
 
 def start_server():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_address = ("localhost", 12345)
+    server_address = ("10.100.102.33", 12345)
     server_socket.bind(server_address)
 
     server_socket.listen(2)

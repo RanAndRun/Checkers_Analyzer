@@ -1,11 +1,9 @@
 import pygame, sys
-import os
 from Board import *
 from time import sleep
-from Enums import EColor
+from Enums import EColor, Ecolors
 from BoardNode import BoardNode
 from Network import Network
-import math
 import threading
 
 from CheckersAI import CheckersAI
@@ -32,7 +30,7 @@ if game_online:
     network = Network()
 
 is_white_to_play = True
-
+player_color = None
 move_lock = threading.Lock()
 
 
@@ -98,9 +96,11 @@ def display_analysis(screen, game_analysis, history, analysis_color):
 
     def handle_key_events():
         nonlocal move_index, display_state
+        global running
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
+                running = False
                 return False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
@@ -146,22 +146,23 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                         int(move_index / 2)
                     ]
                     analysis_board.apply_move(played_move)
+
                     if best_move.__eq__(played_move):
                         is_played_move_best_move = True
 
                     best_move = best_move
                     display_state = "best_move"
                     analysis_board.draw(screen)
+                    analysis_board.show_move_made(played_move, screen)
                 else:
                     best_move = None
                     analysis_board.apply_move(current_move)
                     display_state = "played_move"
                     analysis_board.draw(screen)
+                    analysis_board.show_move_made(current_move, screen, False)
             print("best move", best_move)
             if best_move is not None:
-                analysis_board.show_better_move(
-                    best_move, screen, is_played_move_best_move
-                )
+                analysis_board.show_better_move(best_move, screen)
 
         pygame.display.update()
 
@@ -199,7 +200,6 @@ def main():
     if game_online:
         player_color = network.connect()
 
-    player_color = EColor.black
     # Declare global to modify the global variable
     print(is_white_to_play)
     hasJumped = None
@@ -291,6 +291,17 @@ def main():
             receive_thread.start()
 
         if game_online and is_white_to_play == player_color:
+            if len(board.get_history()) > 0:
+                last_move = board.get_history()[-1]
+                last_move_from_tile_x, last_move_from_tile_y = last_move[0].from_tile
+                last_move_to_tile_x, last_move_to_tile_y = last_move[0].to_tile
+                board.tiles[last_move_from_tile_y][last_move_from_tile_x].glow(
+                    screen, Ecolors.green
+                )
+                board.tiles[last_move_to_tile_y][last_move_to_tile_x].glow(
+                    screen, Ecolors.green
+                )
+                print("last move", last_move)
             if mouse_on_tile:
                 x, y = mouse_on_tile.get_location()
                 mouse_on_pawn = board.pieces_matrix[y][x]
@@ -338,9 +349,20 @@ def main():
             if first_selection:
                 board.show_avilable_moves(first_selection, hasJumped, screen)
                 x, y = first_selection
-                board.tiles[y][x].glow_blue(screen)
+                board.tiles[y][x].glow(screen, Ecolors.blue)
 
         if not game_online:
+            if len(board.get_history()) > 0:
+                last_move = board.get_history()[-1]
+                last_move_from_tile_x, last_move_from_tile_y = last_move[0].from_tile
+                last_move_to_tile_x, last_move_to_tile_y = last_move[0].to_tile
+                board.tiles[last_move_from_tile_y][last_move_from_tile_x].glow(
+                    screen, Ecolors.green
+                )
+                board.tiles[last_move_to_tile_y][last_move_to_tile_x].glow(
+                    screen, Ecolors.green
+                )
+                print("last move", last_move)
             if mouse_on_tile:
                 x, y = mouse_on_tile.get_location()
                 mouse_on_pawn = board.pieces_matrix[y][x]
@@ -388,16 +410,20 @@ def main():
             if first_selection:
                 board.show_avilable_moves(first_selection, hasJumped, screen)
                 x, y = first_selection
-                board.tiles[y][x].glow_blue(screen)
+                board.tiles[y][x].glow(screen, Ecolors.blue)
         # Assuming you have a lock defined somewhere in your code
 
         if analysis_started:
             history = board.get_history()
-            color = player_color
+            if player_color is not None:
+                color = player_color
+            else:
+                print("player color is None")
+                color = EColor.white
             game_analysis = checkers_ai.analyze_game(history, color)
 
             display_analysis(screen, game_analysis, history, color)
-
+            break
         pygame.display.update()
 
 
