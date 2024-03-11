@@ -30,5 +30,20 @@ class DBManager:
         except sqlite3.Error as e:
             print(f"An error occurred: {e}")
 
+
     def close_connection(self):
         self.conn.close()
+
+    def get_win_lose_rate_for_name(self, name):
+        try:
+            self.cursor.execute(
+                "SELECT COUNT(*) FROM players WHERE name = ? AND won = 1", (name,)
+            )
+            won = self.cursor.fetchone()[0]
+            self.cursor.execute(
+                "SELECT COUNT(*) FROM players WHERE name = ? AND won = 0", (name,)
+            )
+            lost = self.cursor.fetchone()[0]
+            return won, lost
+        except sqlite3.Error as e:
+            print(f"An error occurred: {e}")

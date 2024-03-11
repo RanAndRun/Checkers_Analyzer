@@ -100,7 +100,11 @@ def display_analysis(screen, game_analysis, history, analysis_color):
         nonlocal move_index, display_state
         global running
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            if (
+                event.type == pygame.QUIT
+                or event.type == pygame.KEYDOWN
+                and event.key == pygame.K_ESCAPE
+            ):
                 pygame.quit()
                 running = False
                 return False
@@ -186,6 +190,34 @@ def receive_moves_forever(board, network):
                 print("color player", player_color)
         except Exception as e:
             print(f"Error receiving move: {e}")
+
+
+def show_win_rate_graph(win_rate):
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    # Check if win_rate is not a list or is an empty list
+    if not isinstance(win_rate, list) or not win_rate:
+        print("win_rate must be a non-empty list.")
+        return
+
+    # Check if the first element of win_rate is not a tuple or list
+    if not isinstance(win_rate[0], (list, tuple)):
+        print("Each element of win_rate must be a tuple or list.")
+        return
+
+    players = [player[0] for player in win_rate]
+    rates = [player[1] for player in win_rate]
+    x = np.arange(len(players))
+
+    fig, ax = plt.subplots()
+    ax.bar(x, rates)
+    ax.set_xlabel("Players")
+    ax.set_ylabel("Win Rate")
+    ax.set_title("Win Rate of Players")
+    ax.set_xticks(x)
+    ax.set_xticklabels(players)
+    plt.show()
 
 
 def main():
@@ -428,15 +460,19 @@ def main():
         if analysis_started:
             history = board.get_history()
             if player_color is not None:
-                color = player_color
+                color = Eplayers.white if player_color else Eplayers.black
             else:
                 print("player color is None")
                 color = Eplayers.white
+
+            print("analyzing with player color", color)
             game_analysis = checkers_ai.analyze_game(history, color)
 
             display_analysis(screen, game_analysis, history, color)
             break
         pygame.display.update()
+    print(text)
+    show_win_rate_graph(DBM.get_win_lose_rate_for_name(text))
 
 
 if __name__ == "__main__":
