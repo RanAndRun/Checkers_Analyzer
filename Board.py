@@ -2,7 +2,7 @@ import pygame
 import copy
 from Tile import Tile
 from Pawn import Pawn
-from Enums import EColor, Ecolors
+from Enums import Eplayers, Ecolors
 from config import window_width, window_height, board_size
 from os import path
 from config import window_width, window_height
@@ -37,7 +37,7 @@ class Board:
         self.tiles = self.create_tiles()
         self.starting_position()
         self.move_history = []
-        self.current_player = EColor.white
+        self.current_player = Eplayers.white
 
     def create_tiles(self):
         tiles = [[None for x in range(board_size)] for y in range(board_size)]
@@ -63,14 +63,14 @@ class Board:
         for row in range(3):
             mod = row % 2
             for column in range(0 + mod, board_size - 1 + mod, 2):
-                curr = Pawn((column, row), color=EColor.white)
+                curr = Pawn((column, row), color=Eplayers.white)
                 self.pieces_matrix[row][column] = curr
                 self.pieces_list[0].append(curr)
 
         for row in range(7, 4, -1):
             mod = row % 2
             for column in range(0 + mod, board_size - 1 + mod, 2):
-                curr = Pawn((column, row), color=EColor.black)
+                curr = Pawn((column, row), color=Eplayers.black)
                 self.pieces_matrix[row][column] = curr
                 self.pieces_list[1].append(curr)
 
@@ -225,7 +225,7 @@ class Board:
         )
 
     def is_opponent_pawn_on_tile(self, x, y, color):
-        return self.pieces_matrix[y][x] and self.pieces_matrix[y][x].color == EColor(
+        return self.pieces_matrix[y][x] and self.pieces_matrix[y][x].color == Eplayers(
             3 - color.value
         )
 
@@ -306,11 +306,11 @@ class Board:
         return possible_jumps
 
     def can_get_promoted(self, piece: Piece, to_tile: tuple) -> bool:
-        if piece.color == EColor.white and to_tile[1] == board_size - 1:
+        if piece.color == Eplayers.white and to_tile[1] == board_size - 1:
             print("can get promoted", piece, to_tile, piece.color)
 
             return True
-        elif piece.color == EColor.black and to_tile[1] == 0:
+        elif piece.color == Eplayers.black and to_tile[1] == 0:
             print("can get promoted", piece, to_tile, piece.color)
 
             return True
@@ -339,7 +339,7 @@ class Board:
         return possible_moves, possible_jumps
 
     def every_move_for_player(
-        self, color: EColor, hasJumped: Piece = None, depth=0, max_depth=3
+        self, color: Eplayers, hasJumped: Piece = None, depth=0, max_depth=3
     ):
         if depth > max_depth:
             return []  # Stop recursion if max depth is exceeded
@@ -360,10 +360,10 @@ class Board:
                         temp_board.apply_move(jump_move)
 
                         if (
-                            piece.color == EColor.white
+                            piece.color == Eplayers.white
                             and jump_move.to_tile[1] == board_size - 1
                         ) or (
-                            piece.color == EColor.black and jump_move.to_tile[1] == 0
+                            piece.color == Eplayers.black and jump_move.to_tile[1] == 0
                         ):
                             promoted = True
 
@@ -401,9 +401,9 @@ class Board:
                 regular_options, _ = self.every_move_possible_for_piece(piece, None)
                 for move in regular_options:
                     if (
-                        piece.color == EColor.white
+                        piece.color == Eplayers.white
                         and move.to_tile[1] == board_size - 1
-                    ) or (piece.color == EColor.black and move.to_tile[1] == 0):
+                    ) or (piece.color == Eplayers.black and move.to_tile[1] == 0):
                         promoted = True
                     new_node = MoveNode(
                         piece,
@@ -447,8 +447,8 @@ class Board:
 
                     if isinstance(piece, Pawn):
                         if (
-                            piece.color == EColor.white and to_tile[1] == board_size - 1
-                        ) or (piece.color == EColor.black and to_tile[1] == 0):
+                            piece.color == Eplayers.white and to_tile[1] == board_size - 1
+                        ) or (piece.color == Eplayers.black and to_tile[1] == 0):
                             was_promoted = True
                             self.upgrade_to_king(to_tile)
                             piece = self.get_piece_at_tile(
@@ -569,7 +569,7 @@ class Board:
 
     # Game State and Rules
 
-    def jump_is_possible(self, color: EColor) -> bool:
+    def jump_is_possible(self, color: Eplayers) -> bool:
         for piece in self.pieces_list[color.value - 1]:
             if self.where_can_jump(piece.tile) != []:
                 return True
@@ -601,20 +601,17 @@ class Board:
         Returns:
             - 'white' if White wins.
             - 'black' if Black wins.
-            - 'draw' if the game is a draw.
             - None if the game is not over.
         """
-        white_out_of_moves = self.is_player_out_of_moves(EColor.white)
-        black_out_of_moves = self.is_player_out_of_moves(EColor.black)
-        white_out_of_pieces = self.is_player_out_of_pieces(EColor.white)
-        black_out_of_pieces = self.is_player_out_of_pieces(EColor.black)
+        white_out_of_moves = self.is_player_out_of_moves(Eplayers.white)
+        black_out_of_moves = self.is_player_out_of_moves(Eplayers.black)
+        white_out_of_pieces = self.is_player_out_of_pieces(Eplayers.white)
+        black_out_of_pieces = self.is_player_out_of_pieces(Eplayers.black)
 
-        if white_out_of_pieces and black_out_of_pieces:
-            return "draw"  # Both players have no pieces left
-        elif white_out_of_pieces or white_out_of_moves:
-            return "black"  # Black wins
+        if white_out_of_pieces or white_out_of_moves:
+            return Eplayers.black  # Black wins
         elif black_out_of_pieces or black_out_of_moves:
-            return "white"  # White wins
+            return Eplayers.white  # White wins
         else:
             return None  # Game is not over
 
@@ -626,9 +623,9 @@ class Board:
         if piece is King:
             return
 
-        if piece.color == EColor.white and tile[1] != board_size - 1:
+        if piece.color == Eplayers.white and tile[1] != board_size - 1:
             return
-        if piece.color == EColor.black and tile[1] != 0:
+        if piece.color == Eplayers.black and tile[1] != 0:
             return
 
         king = King(tile, piece.color)
@@ -672,7 +669,7 @@ class Board:
         # A piece is considered protected if it can't be eaten if not moved / pieces behind it moves.
         x, y = piece.tile
 
-        if piece.color == EColor.white:
+        if piece.color == Eplayers.white:
             behind_moves = [
                 (-1, -1),
                 (1, -1),
@@ -722,21 +719,21 @@ class Board:
 
                     # Check for pawns and kings
                     if isinstance(piece, Pawn):
-                        if color == EColor.white:
+                        if color == Eplayers.white:
                             p1_nums[0] += 1
                         else:
                             p2_nums[0] += 1
                     elif isinstance(piece, King):
-                        if color == EColor.white:
+                        if color == Eplayers.white:
                             p1_nums[1] += 1
                         else:
                             p2_nums[1] += 1
 
                     # Check for pieces in the back row
-                    if (color == EColor.white and x == 0) or (
-                        color == EColor.black and x == 7
+                    if (color == Eplayers.white and x == 0) or (
+                        color == Eplayers.black and x == 7
                     ):
-                        if color == EColor.white:
+                        if color == Eplayers.white:
                             p1_nums[2] += 1
                         else:
                             p2_nums[2] += 1
@@ -744,26 +741,26 @@ class Board:
                     # Check for middle rows
                     if x == 3 or x == 4:
                         if 2 <= y <= 5:
-                            if color == EColor.white:
+                            if color == Eplayers.white:
                                 p1_nums[3] += 1
                             else:
                                 p2_nums[3] += 1
                         else:
-                            if color == EColor.white:
+                            if color == Eplayers.white:
                                 p1_nums[4] += 1
                             else:
                                 p2_nums[4] += 1
 
                     # Check if can be taken this turn
                     if self.piece_can_be_taken(piece):
-                        if color == EColor.white:
+                        if color == Eplayers.white:
                             p1_nums[5] += 1
                         else:
                             p2_nums[5] += 1
 
                     # Check for protected pieces
                     if self.is_piece_protected(piece):
-                        if color == EColor.white:
+                        if color == Eplayers.white:
                             p1_nums[6] += 1
                         else:
                             p2_nums[6] += 1
@@ -779,7 +776,7 @@ class Board:
     ):
 
         self.current_player = (
-            EColor.black if self.current_player == EColor.white else EColor.white
+            Eplayers.black if self.current_player == Eplayers.white else Eplayers.white
         )
 
     def add_move_to_history(self, move: MoveNode):
@@ -809,9 +806,9 @@ class Board:
             for x in range(board_size):
                 piece = self.pieces_matrix[y][x]
                 if piece:
-                    if piece.color == EColor.white:
+                    if piece.color == Eplayers.white:
                         board_representation += "W "
-                    elif piece.color == EColor.black:
+                    elif piece.color == Eplayers.black:
                         board_representation += "B "
                 else:
                     board_representation += ". "

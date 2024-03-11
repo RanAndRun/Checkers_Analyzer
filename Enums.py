@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class EColor(Enum):
+class Eplayers(Enum):
     white = 1
     black = 2
 

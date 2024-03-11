@@ -1,6 +1,6 @@
 from Board import Board
 from MoveNode import MoveNode
-from Enums import EColor
+from Enums import Eplayers
 from time import sleep
 import copy
 from BoardNode import BoardNode
@@ -91,7 +91,7 @@ class CheckersAI:
         # Temporarily apply the played move
         color_of_player = played_move.piece.color
         is_max = (
-            color_of_player == EColor.black
+            color_of_player == Eplayers.black
         )  # If the played move is white, the next move is black, and vice versa
         board.apply_move(played_move)
 
@@ -153,7 +153,7 @@ class CheckersAI:
 
     def find_move_score(self, move, board):
         color_of_player = move.piece.color
-        is_max = color_of_player == EColor.white
+        is_max = color_of_player == Eplayers.white
         board.apply_move(move)
         move_node = BoardNode(board)
         score = self.minimax(
@@ -163,7 +163,7 @@ class CheckersAI:
         return score
 
     def compare_move(self, move, board):
-        is_max = True if move.piece.color == EColor.white else False
+        is_max = True if move.piece.color == Eplayers.white else False
         best_move, best_value = self.find_best_move(board=board, is_max=is_max)
         played_move_score = self.find_move_score(move, board)
 

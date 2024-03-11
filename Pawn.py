@@ -1,5 +1,5 @@
 from Piece import Piece
-from Enums import EColor
+from Enums import Eplayers
 from Tile import Tile
 import os
 import pygame
@@ -10,7 +10,7 @@ class Pawn(Piece):
     white_pawn_img = os.path.join("assets", "red.png")
     black_pawn_img = os.path.join("assets", "black.png")
 
-    def __init__(self, tile: Tile, color: EColor):
+    def __init__(self, tile: Tile, color: Eplayers):
         super().__init__(tile, color, self.white_pawn_img, self.black_pawn_img)
         # Store the image paths as attributes
         self.white_img_path = self.white_pawn_img

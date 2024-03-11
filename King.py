@@ -9,7 +9,7 @@ class King(Piece):
     white_king_img = os.path.join("assets", "redKing.png")
     black_king_img = os.path.join("assets", "blackKing.png")
 
-    def __init__(self, tile: Tile, color: EColor):
+    def __init__(self, tile: Tile, color: Eplayers):
         super().__init__(tile, color, self.white_king_img, self.black_king_img)
 
     # def __deepcopy__(self, memo):

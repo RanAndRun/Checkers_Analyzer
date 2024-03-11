@@ -1,10 +1,12 @@
 import pygame, sys
 from Board import *
 from time import sleep
-from Enums import EColor, Ecolors
+from Enums import Eplayers, Ecolors
 from BoardNode import BoardNode
 from Network import Network
 import threading
+from DBManager import DBManager
+import os
 
 from CheckersAI import CheckersAI
 from config import window_width, window_height, board_size
@@ -46,7 +48,7 @@ def handle_mouse_click(
     if first_selection is None:
         # Select a piece if it belongs to the current player
         if board.pieces_matrix[y][x] and board.pieces_matrix[y][x].color == (
-            EColor.white if is_white_to_play else EColor.black
+            Eplayers.white if is_white_to_play else Eplayers.black
         ):
             first_selection = (x, y)
     else:
@@ -134,7 +136,6 @@ def display_analysis(screen, game_analysis, history, analysis_color):
             break
 
         if move_index == -1:
-            print("move index is -1")
             analysis_board.draw(screen)
         if 0 <= move_index < len(history):
             current_move, _ = history[move_index]
@@ -201,18 +202,22 @@ def main():
         player_color = network.connect()
 
     # Declare global to modify the global variable
-    print(is_white_to_play)
+    print(player_color)
     hasJumped = None
     run = True
-
+    text = ""
     mouse_x = 0  # store x cordinate of mouse event
     mouse_y = 0  # y cordinate
     board = Board(screen)
     checkers_ai = CheckersAI(board)
 
+    current_directory = os.getcwd()
+    db_path = os.path.join(current_directory, "checkers.db")
+    DBM = DBManager(db_path)
     timer = 0
     before_move = None
     analysis_started = False
+    ask_for_name = False
 
     while run:
 
@@ -239,46 +244,39 @@ def main():
                 mouse_x, mouse_y = event.pos
                 mouse_clicked = True
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_k:  # Check if 'K' key is pressed
-                    print(board.move_history)
-                    board.undo_move()
-                    is_white_to_play = not is_white_to_play
 
-                elif event.key == pygame.K_p:  # Check if 'P' key is pressed
-                    best_move = checkers_ai.find_best_move(is_max=is_white_to_play)
-                    print(best_move)
-                    board.apply_move(best_move[0])
-                    is_white_to_play = not is_white_to_play
+                if event.key == pygame.K_BACKSPACE:
+                    text = text[:-1]
+                elif event.key == pygame.K_KP_ENTER or event.key == pygame.K_RETURN:
+                    if not ask_for_name:
+                        ask_for_name = True
+                        analysis_started = False
+                    elif ask_for_name and not analysis_started:
+                        winner = board.is_game_over()
+                        if winner == Eplayers.white:
+                            DBM.add_player(text, True)
+                        elif winner == Eplayers.black:
+                            DBM.add_player(text, False)
+                        ask_for_name = False
+                        analysis_started = True
 
-                elif event.key == pygame.K_q:  # Check if 'Q' key is pressed
-                    history = board.get_history()
-                    last_move, last_board = history[-1]
-                    played_move_score, best_value, best_move = checkers_ai.compare_move(
-                        last_move, last_board
-                    )
-                    print(
-                        "played move",
-                        last_move,
-                        "played move score",
-                        played_move_score,
-                        "best move score",
-                        best_value,
-                        "best move",
-                        best_move,
-                    )
-
-                elif event.key == pygame.K_r:
-                    analysis_started = True
-
-                elif event.key == pygame.K_s:
-                    print(board.pieces_matrix)
-                    print(board.every_move_for_player(EColor.white))
-
-                elif event.key == pygame.K_t:  # Check if 'P' key is pressed
-                    moves_made = board.get_history()[0]
-                    print(checkers_ai.find_best_move(EColor.white, None))
-
+                else:
+                    text += event.unicode
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
+
+        # if event.key == pygame.K_k:  # Check if 'K' key is pressed
+        #     print(board.move_history)
+        #     board.undo_move()
+        #     is_white_to_play = not is_white_to_play
+
+        # elif event.key == pygame.K_p:  # Check if 'P' key is pressed
+        #     best_move = checkers_ai.find_best_move(is_max=is_white_to_play)
+        #     print(best_move)
+        #     board.apply_move(best_move[0])
+        #     is_white_to_play = not is_white_to_play
+
+        # elif event.key == pygame.K_r:
+        # analysis_started = True
 
         # Start the thread when initializing your game
         if game_online:
@@ -301,12 +299,11 @@ def main():
                 board.tiles[last_move_to_tile_y][last_move_to_tile_x].glow(
                     screen, Ecolors.green
                 )
-                print("last move", last_move)
             if mouse_on_tile:
                 x, y = mouse_on_tile.get_location()
                 mouse_on_pawn = board.pieces_matrix[y][x]
                 if mouse_on_pawn and mouse_on_pawn.color == (
-                    EColor.white if is_white_to_play else EColor.black
+                    Eplayers.white if is_white_to_play else Eplayers.black
                 ):
                     board.show_avilable_moves(
                         mouse_on_tile.get_location(), hasJumped, screen
@@ -315,7 +312,7 @@ def main():
                     mouse_clicked
                     and mouse_on_pawn
                     and mouse_on_pawn.color
-                    == (EColor.white if is_white_to_play else EColor.black)
+                    == (Eplayers.white if is_white_to_play else Eplayers.black)
                 ):
                     (
                         first_selection,
@@ -362,12 +359,11 @@ def main():
                 board.tiles[last_move_to_tile_y][last_move_to_tile_x].glow(
                     screen, Ecolors.green
                 )
-                print("last move", last_move)
             if mouse_on_tile:
                 x, y = mouse_on_tile.get_location()
                 mouse_on_pawn = board.pieces_matrix[y][x]
                 if mouse_on_pawn and mouse_on_pawn.color == (
-                    EColor.white if is_white_to_play else EColor.black
+                    Eplayers.white if is_white_to_play else Eplayers.black
                 ):
                     board.show_avilable_moves(
                         mouse_on_tile.get_location(), hasJumped, screen
@@ -376,7 +372,7 @@ def main():
                     mouse_clicked
                     and mouse_on_pawn
                     and mouse_on_pawn.color
-                    == (EColor.white if is_white_to_play else EColor.black)
+                    == (Eplayers.white if is_white_to_play else Eplayers.black)
                 ):
                     (
                         first_selection,
@@ -413,13 +409,29 @@ def main():
                 board.tiles[y][x].glow(screen, Ecolors.blue)
         # Assuming you have a lock defined somewhere in your code
 
+        if ask_for_name:
+            color_inactive = pygame.Color("lightskyblue3")
+            color_active = pygame.Color("dodgerblue2")
+            color = color_inactive
+            active = False
+
+            font = pygame.font.Font(None, 36)
+            input_box = pygame.Rect(100, 75, 140, 32)
+            screen.fill((255, 255, 255))
+            input_box = pygame.Rect(100, 75, 140, 32)
+            txt_surface = font.render(text, True, color)
+            input_box.w = window_width
+            screen.blit(txt_surface, (input_box.x + 5, input_box.y + 5))
+            pygame.draw.rect(screen, color, input_box, 2)
+            pygame.display.flip()
+
         if analysis_started:
             history = board.get_history()
             if player_color is not None:
                 color = player_color
             else:
                 print("player color is None")
-                color = EColor.white
+                color = Eplayers.white
             game_analysis = checkers_ai.analyze_game(history, color)
 
             display_analysis(screen, game_analysis, history, color)

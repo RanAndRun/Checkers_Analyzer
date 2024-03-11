@@ -1,7 +1,7 @@
 import copy
 from Board import Board
 from config import board_size
-from Enums import EColor
+from Enums import Eplayers
 
 
 class BoardNode:
@@ -32,9 +32,9 @@ class BoardNode:
             for x in range(board_size):
                 piece = self.board.pieces_matrix[y][x]
                 if piece:
-                    if piece.color == EColor.white:
+                    if piece.color == Eplayers.white:
                         board_representation += "W "
-                    elif piece.color == EColor.black:
+                    elif piece.color == Eplayers.black:
                         board_representation += "B "
                 else:
                     board_representation += ". "
@@ -42,4 +42,3 @@ class BoardNode:
         return board_representation + "\n"
 
 
-# TODO watch mandetory jump

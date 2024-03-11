@@ -9,13 +9,13 @@ class Piece:
     scale_factor_width = 1
     scale_factor_height = 1
 
-    def __init__(self, tile: tuple, color: EColor, white_img_path, black_img_path):
+    def __init__(self, tile: tuple, color: Eplayers, white_img_path, black_img_path):
         self.alive = True
         self.tile = tile
         self.color = color
         self.white_img_path = white_img_path
         self.black_img_path = black_img_path
-        if self.color == EColor.white:
+        if self.color == Eplayers.white:
             self.image = pygame.image.load(white_img_path)
         else:
             self.image = pygame.image.load(black_img_path)
@@ -72,7 +72,7 @@ class Piece:
         copied_piece.color = self.color
         # Assuming you have paths for images as class variables like white_img_path, black_img_path
         copied_piece.image = pygame.image.load(
-            self.white_img_path if self.color == EColor.white else self.black_img_path
+            self.white_img_path if self.color == Eplayers.white else self.black_img_path
         )
 
         return copied_piece
