@@ -97,14 +97,14 @@ def handle_mouse_click(
 def display_analysis(screen, game_analysis, history, analysis_color):
 
     def handle_key_events():
-        nonlocal move_index, display_state, analysis_move_index
+        nonlocal move_index, display_state
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 return False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    move_index = max(0, move_index - 1)
+                    move_index = max(-1, move_index - 1)
                     if len(history) > move_index:
                         analysis_board.undo_move()
                         analysis_board.undo_move()
@@ -121,8 +121,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
 
     running = True
     analysis_board = Board(screen)  # Assuming this is your custom Board class
-    move_index = 0
-    analysis_move_index = 0
+    move_index = -1
 
     display_state = "start"  # Can be 'start', 'played_move', 'best_move'
     last_update_time = pygame.time.get_ticks()
@@ -134,10 +133,10 @@ def display_analysis(screen, game_analysis, history, analysis_color):
         if not handle_key_events():
             break
 
-        # if move_index == -1:
-        #     print("move index is -1")
+        if move_index == -1:
+            print("move index is -1")
+            analysis_board.draw(screen)
         if 0 <= move_index < len(history):
-            print(move_index, len(history))
             current_move, _ = history[move_index]
 
             if display_state == "start":
@@ -199,6 +198,8 @@ def main():
     second_selection = None
     if game_online:
         player_color = network.connect()
+
+    player_color = EColor.black
     # Declare global to modify the global variable
     print(is_white_to_play)
     hasJumped = None
@@ -392,7 +393,7 @@ def main():
 
         if analysis_started:
             history = board.get_history()
-            color = EColor.white
+            color = player_color
             game_analysis = checkers_ai.analyze_game(history, color)
 
             display_analysis(screen, game_analysis, history, color)

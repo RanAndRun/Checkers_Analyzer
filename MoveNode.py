@@ -77,14 +77,4 @@ class MoveNode:
         if self.killed and not self.killed.tile == other.killed.tile:
             return False
 
-        # Compare children
-        # if len(self.children) != len(other.children):
-        #     return False
-        # for self_child, other_child in zip(self.children, other.children):
-        #     if self_child != other_child:
-        #         return False
-
-        # Optionally, compare parent if needed
-        # Note: Be careful with comparing parents to avoid circular reference issues.
-
         return True
