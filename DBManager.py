@@ -13,37 +13,40 @@ class DBManager:
             CREATE TABLE IF NOT EXISTS players (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT,
+                game_index INTEGER,
                 won BOOLEAN
             )
-        """
+            """
         )
         self.conn.commit()
 
     def add_player(self, name, won):
         try:
+            # Check the current index for the player
             self.cursor.execute(
-                "INSERT INTO players (name, won) VALUES (?, ?)", (name, won)
+                "SELECT MAX(game_index) FROM players WHERE name = ?", (name,)
+            )
+            result = self.cursor.fetchone()
+            current_index = 1 if result[0] is None else result[0] + 1
+
+            # Insert the new record
+            self.cursor.execute(
+                "INSERT INTO players (name, game_index, won) VALUES (?, ?, ?)",
+                (name, current_index, won),
             )
             self.conn.commit()
-            db = self.cursor.execute("SELECT * FROM players")
-            print(db.fetchall())
         except sqlite3.Error as e:
             print(f"An error occurred: {e}")
 
+    def get_matches_for_name(self, name):
+        try:
+            self.cursor.execute(
+                "SELECT name, game_index, won FROM players WHERE name = ?", (name,)
+            )
+            return self.cursor.fetchall()
+        except sqlite3.Error as e:
+            print(f"An error occurred: {e}")
+            return []
 
     def close_connection(self):
         self.conn.close()
-
-    def get_win_lose_rate_for_name(self, name):
-        try:
-            self.cursor.execute(
-                "SELECT COUNT(*) FROM players WHERE name = ? AND won = 1", (name,)
-            )
-            won = self.cursor.fetchone()[0]
-            self.cursor.execute(
-                "SELECT COUNT(*) FROM players WHERE name = ? AND won = 0", (name,)
-            )
-            lost = self.cursor.fetchone()[0]
-            return won, lost
-        except sqlite3.Error as e:
-            print(f"An error occurred: {e}")

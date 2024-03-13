@@ -32,7 +32,7 @@ if game_online:
     network = Network()
 
 is_white_to_play = True
-player_color = None
+player_color = True
 move_lock = threading.Lock()
 
 
@@ -105,8 +105,6 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                 or event.type == pygame.KEYDOWN
                 and event.key == pygame.K_ESCAPE
             ):
-                pygame.quit()
-                running = False
                 return False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
@@ -192,32 +190,70 @@ def receive_moves_forever(board, network):
             print(f"Error receiving move: {e}")
 
 
-def show_win_rate_graph(win_rate):
-    import matplotlib.pyplot as plt
-    import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+import io
 
-    # Check if win_rate is not a list or is an empty list
-    if not isinstance(win_rate, list) or not win_rate:
-        print("win_rate must be a non-empty list.")
+
+def show_win_rate_graph(game_results):
+    global screen
+    if not isinstance(game_results, list) or not game_results:
+        print("game_results must be a non-empty list.")
         return
 
-    # Check if the first element of win_rate is not a tuple or list
-    if not isinstance(win_rate[0], (list, tuple)):
-        print("Each element of win_rate must be a tuple or list.")
+    if not all(
+        isinstance(record, (list, tuple)) and len(record) == 3
+        for record in game_results
+    ):
+        print(
+            "Each element of game_results must be a tuple or list with three elements."
+        )
         return
 
-    players = [player[0] for player in win_rate]
-    rates = [player[1] for player in win_rate]
-    x = np.arange(len(players))
+    # Dictionary to keep track of each player's wins, games, and cumulative win rate
+    players_data = {}
 
+    for name, game_index, win in game_results:
+        if name not in players_data:
+            players_data[name] = {"wins": 0, "games": 0, "win_rates": []}
+
+        players_data[name]["games"] += 1
+        if win:
+            players_data[name]["wins"] += 1
+
+        current_win_rate = players_data[name]["wins"] / players_data[name]["games"]
+        players_data[name]["win_rates"].append(current_win_rate)
+
+    # Plotting
     fig, ax = plt.subplots()
-    ax.bar(x, rates)
-    ax.set_xlabel("Players")
+
+    for name, data in players_data.items():
+        ax.plot(range(1, len(data["win_rates"]) + 1), data["win_rates"], label=name)
+
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.set_ylim(0, 1.2)  # Set the limits for the y-axis
+    ax.set_xlabel("Game Number")
     ax.set_ylabel("Win Rate")
-    ax.set_title("Win Rate of Players")
-    ax.set_xticks(x)
-    ax.set_xticklabels(players)
-    plt.show()
+    ax.set_title("Win Rate Over Time")
+    plt.legend()
+    # plt.show()
+
+    buffer = io.BytesIO()
+    plt.savefig(buffer, format="png")
+    plt.close(fig)  # Close the figure to free memory
+    buffer.seek(0)  # Rewind the buffer to the beginning
+
+    # Load the image into Pygame and blit it to the screen
+    plot_image = pygame.image.load(buffer)
+    plot_rect = plot_image.get_rect()
+
+    # Resize the image to fit the pygame screen
+    plot_image = pygame.transform.scale(plot_image, (window_width, window_height))
+    screen.blit(plot_image, plot_rect)
+    pygame.display.flip()  # Update the screen
+
+    # Clear the buffer
+    buffer.close()
 
 
 def main():
@@ -250,6 +286,7 @@ def main():
     before_move = None
     analysis_started = False
     ask_for_name = False
+    showing_graph = False
 
     while run:
 
@@ -257,14 +294,9 @@ def main():
             30
         )  # Adjust the frame rate as needed (30 frames per second in this example)
 
-        # Check if one second has passed
-        if timer >= 2000:  # 1000 milliseconds = 1 second
-            timer = 0
-
         board.draw(screen)
         mouse_clicked = False
-        # who plays now
-        # can you jump
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -280,37 +312,23 @@ def main():
                 if event.key == pygame.K_BACKSPACE:
                     text = text[:-1]
                 elif event.key == pygame.K_KP_ENTER or event.key == pygame.K_RETURN:
-                    if not ask_for_name:
+
+                    if not ask_for_name and not showing_graph:
                         ask_for_name = True
-                        analysis_started = False
-                    elif ask_for_name and not analysis_started:
+
+                    elif not analysis_started and not showing_graph:
                         winner = board.is_game_over()
                         if winner == Eplayers.white:
-                            DBM.add_player(text, True)
+                            DBM.add_player(text, True if player_color else False)
                         elif winner == Eplayers.black:
-                            DBM.add_player(text, False)
-                        ask_for_name = False
+                            DBM.add_player(text, False if player_color else True)
                         analysis_started = True
+                        ask_for_name = False
 
                 else:
-                    text += event.unicode
+                    text += event.unicode if ask_for_name else ""
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
 
-        # if event.key == pygame.K_k:  # Check if 'K' key is pressed
-        #     print(board.move_history)
-        #     board.undo_move()
-        #     is_white_to_play = not is_white_to_play
-
-        # elif event.key == pygame.K_p:  # Check if 'P' key is pressed
-        #     best_move = checkers_ai.find_best_move(is_max=is_white_to_play)
-        #     print(best_move)
-        #     board.apply_move(best_move[0])
-        #     is_white_to_play = not is_white_to_play
-
-        # elif event.key == pygame.K_r:
-        # analysis_started = True
-
-        # Start the thread when initializing your game
         if game_online:
             receive_thread = threading.Thread(
                 target=receive_moves_forever, args=(board, network)
@@ -466,15 +484,22 @@ def main():
                 color = Eplayers.white
 
             print("analyzing with player color", color)
-            game_analysis = checkers_ai.analyze_game(history, color)
+            try:
+                game_analysis = checkers_ai.analyze_game(history, color)
+            except AttributeError as e:
+                print(f"An error occurred during game analysis: {e}")
+                print(game_analysis)
 
             display_analysis(screen, game_analysis, history, color)
-            break
+            analysis_started = False
+            showing_graph = True
+
+        if showing_graph:
+            matches = DBM.get_matches_for_name(text)
+            show_win_rate_graph(matches)
+
         pygame.display.update()
-    print(text)
-    show_win_rate_graph(DBM.get_win_lose_rate_for_name(text))
 
 
 if __name__ == "__main__":
-    print(pygame.display.Info)
     main()
