@@ -122,23 +122,36 @@ class Board:
     def show_better_move(self, move: MoveNode, screen):
         if move is None:
             return
-        from_tile_x, from_tile_y = move.from_tile
-        to_tile_x, to_tile_y = move.to_tile
-        self.tiles[from_tile_y][from_tile_x].glow(screen, Ecolors.blue)
-        self.tiles[to_tile_y][to_tile_x].glow(screen, Ecolors.blue)
+            
+        while move:
+            from_tile_x, from_tile_y = move.from_tile
+            to_tile_x, to_tile_y = move.to_tile
+
+            self.tiles[from_tile_y][from_tile_x].glow(screen, Ecolors.blue)
+            self.tiles[to_tile_y][to_tile_x].glow(screen, Ecolors.blue)
+
+            # Move to the next move in the sequence, if it exists
+            move = move.children[0] if move.children else None   
+
 
     def show_move_made(self, move: MoveNode, screen, is_analyzing_player=True):
-        if move is None:
+        if not move:
             print("No move to show")
             return
-        from_tile_x, from_tile_y = move.from_tile
-        to_tile_x, to_tile_y = move.to_tile
-        if is_analyzing_player:
-            color = Ecolors.green
-        else:
-            color = Ecolors.red
-        self.tiles[from_tile_y][from_tile_x].glow(screen, color)
-        self.tiles[to_tile_y][to_tile_x].glow(screen, color)
+
+        # Determine the color based on the player analyzing the move
+        color = Ecolors.green if is_analyzing_player else Ecolors.red
+
+        # Iterate through the moves and their children to highlight tiles
+        while move:
+            from_tile_x, from_tile_y = move.from_tile
+            to_tile_x, to_tile_y = move.to_tile
+
+            self.tiles[from_tile_y][from_tile_x].glow(screen, color)
+            self.tiles[to_tile_y][to_tile_x].glow(screen, color)
+
+            # Move to the next move in the sequence, if it exists
+            move = move.children[0] if move.children else None
 
     def show_avilable_moves(self, from_tile: tuple, has_jumped: Piece, screen):
         x, y = from_tile
@@ -533,13 +546,14 @@ class Board:
     def build_reverse_stack(self, move_node):
         reverse_move_stack = []
         current_move = move_node
-        while current_move:
+        while current_move != []:
             reverse_move_stack.append(current_move)
-            # Add all child moves to the stack in reverse order
 
-            # TODO: understand why reversed is used here
-            reverse_move_stack.extend(reversed(current_move.children))
-            current_move = current_move.parent
+            if current_move.children != []:
+                current_move = current_move.children[0]
+            else:
+                current_move = []
+        print("reverse_move_stack", reverse_move_stack)
         return reverse_move_stack
 
     def undo_single_move(self, move_node):

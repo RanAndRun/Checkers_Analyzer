@@ -164,12 +164,12 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     analysis_board.draw(screen)
                     analysis_board.show_move_made(current_move, screen, False)
             print("best move", best_move)
-            if best_move is not None and not is_played_move_best_move:
-                p = best_move.children
-                while p != []:
-
-                    p = p.children
-                    print("children", p)
+            if best_move is not None:
+                print("best move children", best_move.children)
+            if is_played_move_best_move:
+                # show the played move in yellow
+                analysis_board.show_move_made(current_move, screen, True)
+            elif best_move is not None:
                 analysis_board.show_better_move(best_move, screen)
 
         pygame.display.update()
@@ -329,7 +329,10 @@ def main():
                             DBM.add_player(text, False if player_color else True)
                         analysis_started = True
                         ask_for_name = False
-
+                elif event.key == pygame.K_k:
+                    board.undo_move()
+                    board.switch_player()
+                    is_white_to_play = not is_white_to_play
                 else:
                     text += event.unicode if ask_for_name else ""
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
