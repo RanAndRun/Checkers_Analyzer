@@ -139,9 +139,17 @@ class CheckersAI:
                 move.killed = board.get_piece_at_tile(move.killed.tile)
             print(move.piece, "move")
             # Skip if the move's piece color doesn't match the specified color
-            if move.piece.color != color:
-                print("history color not matching", move.piece.color, color)
-                continue
+            try:
+                if move.piece.color != color:
+                    print("history color not matching", move.piece.color, color)
+                    continue
+            except AttributeError:
+                print("move", move)
+                print("from tile", move.from_tile)
+                print("piece", move.piece)
+                print("color", move.piece.color)
+                print("color", color)
+
             # Perform evaluation and comparison for the move
             played_move_score, best_value, best_move = self.compare_move(move, board)
 

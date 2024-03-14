@@ -164,7 +164,12 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     analysis_board.draw(screen)
                     analysis_board.show_move_made(current_move, screen, False)
             print("best move", best_move)
-            if best_move is not None:
+            if best_move is not None and not is_played_move_best_move:
+                p = best_move.children
+                while p != []:
+
+                    p = p.children
+                    print("children", p)
                 analysis_board.show_better_move(best_move, screen)
 
         pygame.display.update()
@@ -484,11 +489,7 @@ def main():
                 color = Eplayers.white
 
             print("analyzing with player color", color)
-            try:
-                game_analysis = checkers_ai.analyze_game(history, color)
-            except AttributeError as e:
-                print(f"An error occurred during game analysis: {e}")
-                print(game_analysis)
+            game_analysis = checkers_ai.analyze_game(history, color)
 
             display_analysis(screen, game_analysis, history, color)
             analysis_started = False

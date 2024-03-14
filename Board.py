@@ -121,7 +121,6 @@ class Board:
 
     def show_better_move(self, move: MoveNode, screen):
         if move is None:
-            print("No move to show")
             return
         from_tile_x, from_tile_y = move.from_tile
         to_tile_x, to_tile_y = move.to_tile
@@ -447,7 +446,8 @@ class Board:
 
                     if isinstance(piece, Pawn):
                         if (
-                            piece.color == Eplayers.white and to_tile[1] == board_size - 1
+                            piece.color == Eplayers.white
+                            and to_tile[1] == board_size - 1
                         ) or (piece.color == Eplayers.black and to_tile[1] == 0):
                             was_promoted = True
                             self.upgrade_to_king(to_tile)
@@ -648,13 +648,13 @@ class Board:
         if isinstance(king, King):
             pawn = Pawn(original_tile, king.color)  # Recreate the pawn
             self.pieces_matrix[y][x] = pawn
-            try:
-                self.pieces_list[king.color.value - 1].remove(king)
-                self.pieces_list[pawn.color.value - 1].append(pawn)
-            except ValueError:
-                print("ValueError: King not found in pieces_list")
-                print("king", king, "original tile", original_tile)
-                print("pieces_list", self.pieces_list)
+
+            self.pieces_list[king.color.value - 1].remove(king)
+            self.pieces_list[pawn.color.value - 1].append(pawn)
+            # except ValueError:
+            #     print("ValueError: King not found in pieces_list")
+            #     print("king", king, "original tile", original_tile)
+            #     print("pieces_list", self.pieces_list)
 
     def piece_can_be_taken(self, piece):
         # Check if any opponent can jump over the piece
