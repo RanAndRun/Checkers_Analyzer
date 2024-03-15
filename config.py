@@ -2,9 +2,10 @@
 import pygame
 
 
-window_width = 850
-window_height = 850
+window_width = 1200
+window_height = 1200
 board_size = 8
+game_online = False
 
 
 # def get_optimal_window_size(original_width, original_height):

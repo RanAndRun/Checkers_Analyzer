@@ -14,7 +14,7 @@ from matplotlib.ticker import MaxNLocator
 import io
 
 from CheckersAI import CheckersAI
-from config import window_width, window_height, board_size
+from config import window_width, window_height, board_size, game_online
 
 move_lock = threading.Lock()
 
@@ -31,8 +31,6 @@ pygame.init()
 screen = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption("Checkers_Analyzer")
 
-
-game_online = False  # Set to True to play online
 
 if game_online:
     network = Network()
@@ -103,7 +101,7 @@ def handle_mouse_click(
 def display_analysis(screen, game_analysis, history, analysis_color):
 
     def handle_key_events():
-        nonlocal move_index, display_state
+        nonlocal move_index, display_state, mouse_clicked, mouse_x, mouse_y, analysis_board, show_explanation
         global running
         for event in pygame.event.get():
             if (
@@ -127,28 +125,48 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     ):  # Checks that we don't go beyond the last move
                         move_index += 1
                         display_state = "start"
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                # Check if the click is within the rect of the question mark icon
+                if question_mark_rect.collidepoint(event.pos):
+                    show_explanation = not show_explanation
         return True
 
     running = True
     analysis_board = Board(screen)  # Assuming this is your custom Board class
     move_index = -1
+    mouse_clicked, mouse_x, mouse_y, show_explanation = False, 0, 0, False
+
+    question_mark = os.path.join("assets", "questionMark.png")
+    question_mark = pygame.image.load(question_mark)
+    question_mark = pygame.transform.scale(
+        question_mark, (window_width * 0.1, window_height * 0.1)
+    )
+    question_mark_rect = question_mark.get_rect()
 
     display_state = "start"  # Can be 'start', 'played_move', 'best_move'
     last_update_time = pygame.time.get_ticks()
     screen.fill((255, 255, 255))
+
     analysis_board.draw(screen)
+    screen.blit(question_mark, question_mark_rect)
     pygame.display.update()
 
+    # explantion
+    explain = os.path.join("assets", "scroll.png")
+    explain = pygame.image.load(explain)
+    explain = pygame.transform.scale(explain, (window_width, window_height))
     while running:
+        print(show_explanation)
+
         if not handle_key_events():
             break
-
         if move_index == -1:
             analysis_board.draw(screen)
         if 0 <= move_index < len(history):
             current_move, _ = history[move_index]
 
             if display_state == "start":
+
                 is_played_move_best_move = False
                 if current_move.piece.color == analysis_color:
                     played_move, move_score, best_move_score, best_move = game_analysis[
@@ -180,6 +198,10 @@ def display_analysis(screen, game_analysis, history, analysis_color):
             elif best_move is not None:
                 analysis_board.show_better_move(best_move, screen)
 
+        if show_explanation:
+            screen.blit(explain, (0, 0))
+
+        screen.blit(question_mark, question_mark_rect)
         pygame.display.update()
 
 
@@ -299,6 +321,7 @@ def main():
 
     backround = os.path.join("assets", "backround.jpg")
     backround = pygame.image.load(backround)
+    backround = pygame.transform.scale(backround, (window_width, window_height))
 
     while run:
 
@@ -345,6 +368,7 @@ def main():
                     is_white_to_play = not is_white_to_play
                 else:
                     text += event.unicode if ask_for_name else ""
+
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
 
         if game_online:
@@ -480,17 +504,27 @@ def main():
         if ask_for_name:
             color = (100, 100, 100)
             screen.blit(backround, (0, 0))
-            font = pygame.font.Font(None, 36)
-            input_box = pygame.Rect(100, 75, 140, 32)
+            font = pygame.font.Font(None, window_height // 20)
+
             txt_surface = font.render(text, True, color)
-            input_box.w = input_box.w = max(200, txt_surface.get_width() + 10)
+
+            input_box_width = int(window_width * 0.35)
+            input_box_x = (window_width - input_box_width) // 2
+            input_box_y = int(window_height * 0.1)
+
+            input_box = pygame.Rect(input_box_x, input_box_y, input_box_width, 32)
+
+            input_box.w = max(200, txt_surface.get_width() + 10)
             screen.blit(txt_surface, (input_box.x + 5, input_box.y + 5))
-            pygame.draw.rect(screen, color, input_box, 2)
 
             txt_surface = font.render(
                 "Enter your name. Name must contain at least one character", True, BLUE
             )
-            screen.blit(txt_surface, (100, 40))
+            prompt_position_y = int(window_height * 0.05)
+            screen.blit(
+                txt_surface,
+                ((window_width - txt_surface.get_width()) // 2, prompt_position_y),
+            )
 
             pygame.display.flip()
 
