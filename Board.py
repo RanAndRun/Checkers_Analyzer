@@ -122,7 +122,7 @@ class Board:
     def show_better_move(self, move: MoveNode, screen):
         if move is None:
             return
-            
+
         while move:
             from_tile_x, from_tile_y = move.from_tile
             to_tile_x, to_tile_y = move.to_tile
@@ -131,16 +131,24 @@ class Board:
             self.tiles[to_tile_y][to_tile_x].glow(screen, Ecolors.blue)
 
             # Move to the next move in the sequence, if it exists
-            move = move.children[0] if move.children else None   
+            move = move.children[0] if move.children else None
 
-
-    def show_move_made(self, move: MoveNode, screen, is_analyzing_player=True):
+    def show_move_made(
+        self,
+        move: MoveNode,
+        screen,
+        is_analyzing_player,
+        is_played_best_move,
+    ):
         if not move:
             print("No move to show")
             return
 
         # Determine the color based on the player analyzing the move
-        color = Ecolors.green if is_analyzing_player else Ecolors.red
+        if is_played_best_move:
+            color = Ecolors.yellow
+        else:
+            color = Ecolors.green if is_analyzing_player else Ecolors.red
 
         # Iterate through the moves and their children to highlight tiles
         while move:

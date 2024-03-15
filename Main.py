@@ -143,8 +143,8 @@ def display_analysis(screen, game_analysis, history, analysis_color):
             current_move, _ = history[move_index]
 
             if display_state == "start":
+                is_played_move_best_move = False
                 if current_move.piece.color == analysis_color:
-                    is_played_move_best_move = False
                     played_move, move_score, best_move_score, best_move = game_analysis[
                         int(move_index / 2)
                     ]
@@ -156,19 +156,21 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     best_move = best_move
                     display_state = "best_move"
                     analysis_board.draw(screen)
-                    analysis_board.show_move_made(played_move, screen)
+                    analysis_board.show_move_made(
+                        played_move, screen, True, is_played_move_best_move
+                    )
                 else:
                     best_move = None
                     analysis_board.apply_move(current_move)
                     display_state = "played_move"
                     analysis_board.draw(screen)
-                    analysis_board.show_move_made(current_move, screen, False)
-            print("best move", best_move)
-            if best_move is not None:
-                print("best move children", best_move.children)
+                    analysis_board.show_move_made(current_move, screen, False, False)
+
             if is_played_move_best_move:
                 # show the played move in yellow
-                analysis_board.show_move_made(current_move, screen, True)
+                analysis_board.show_move_made(
+                    current_move, screen, True, is_played_move_best_move
+                )
             elif best_move is not None:
                 analysis_board.show_better_move(best_move, screen)
 
