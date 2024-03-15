@@ -8,6 +8,11 @@ import threading
 from DBManager import DBManager
 import os
 
+
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+import io
+
 from CheckersAI import CheckersAI
 from config import window_width, window_height, board_size
 
@@ -19,6 +24,7 @@ fps_clock = pygame.time.Clock()
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
+BLUE = (0, 0, 255)
 
 pygame.init()
 
@@ -197,16 +203,11 @@ def receive_moves_forever(board, network):
             print(f"Error receiving move: {e}")
 
 
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
-import io
-
-
 def show_win_rate_graph(game_results):
     global screen
     if not isinstance(game_results, list) or not game_results:
         print("game_results must be a non-empty list.")
-        return
+        return False
 
     if not all(
         isinstance(record, (list, tuple)) and len(record) == 3
@@ -215,7 +216,7 @@ def show_win_rate_graph(game_results):
         print(
             "Each element of game_results must be a tuple or list with three elements."
         )
-        return
+        return False
 
     # Dictionary to keep track of each player's wins, games, and cumulative win rate
     players_data = {}
@@ -261,6 +262,7 @@ def show_win_rate_graph(game_results):
 
     # Clear the buffer
     buffer.close()
+    return True
 
 
 def main():
@@ -295,6 +297,9 @@ def main():
     ask_for_name = False
     showing_graph = False
 
+    backround = os.path.join("assets", "backround.jpg")
+    backround = pygame.image.load(backround)
+
     while run:
 
         timer += fps_clock.tick_busy_loop(
@@ -320,6 +325,8 @@ def main():
                     text = text[:-1]
                 elif event.key == pygame.K_KP_ENTER or event.key == pygame.K_RETURN:
 
+                    if ask_for_name and text == "":
+                        continue
                     if not ask_for_name and not showing_graph:
                         ask_for_name = True
 
@@ -331,6 +338,7 @@ def main():
                             DBM.add_player(text, False if player_color else True)
                         analysis_started = True
                         ask_for_name = False
+
                 elif event.key == pygame.K_k:
                     board.undo_move()
                     board.switch_player()
@@ -470,19 +478,20 @@ def main():
         # Assuming you have a lock defined somewhere in your code
 
         if ask_for_name:
-            color_inactive = pygame.Color("lightskyblue3")
-            color_active = pygame.Color("dodgerblue2")
-            color = color_inactive
-            active = False
-
+            color = (100, 100, 100)
+            screen.blit(backround, (0, 0))
             font = pygame.font.Font(None, 36)
             input_box = pygame.Rect(100, 75, 140, 32)
-            screen.fill((255, 255, 255))
-            input_box = pygame.Rect(100, 75, 140, 32)
             txt_surface = font.render(text, True, color)
-            input_box.w = window_width
+            input_box.w = input_box.w = max(200, txt_surface.get_width() + 10)
             screen.blit(txt_surface, (input_box.x + 5, input_box.y + 5))
             pygame.draw.rect(screen, color, input_box, 2)
+
+            txt_surface = font.render(
+                "Enter your name. Name must contain at least one character", True, BLUE
+            )
+            screen.blit(txt_surface, (100, 40))
+
             pygame.display.flip()
 
         if analysis_started:
@@ -502,7 +511,9 @@ def main():
 
         if showing_graph:
             matches = DBM.get_matches_for_name(text)
-            show_win_rate_graph(matches)
+            if show_win_rate_graph(matches) == False:
+                pygame.quit()
+                sys.exit()
 
         pygame.display.update()
 
