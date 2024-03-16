@@ -6,7 +6,7 @@ from Enums import Ecolors
 
 
 class Tile:
-    tile_width, tile_height = window_width // board_size, window_height // board_size
+    tile_width, tile_height = window_width / board_size, window_height / board_size
 
     def __init__(self, x, y, x_point, y_point):
         self.row = y

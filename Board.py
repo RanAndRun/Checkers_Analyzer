@@ -14,7 +14,7 @@ from MoveNode import MoveNode
 
 class Board:
 
-    tile_width, tile_height = window_width // board_size, window_height // board_size
+    tile_width, tile_height = window_width / board_size, window_height / board_size
     board_image = pygame.image.load(path.join("assets", "8x8_checkered_board.png"))
     size = (window_width, window_height)
     board_image = pygame.transform.scale(board_image, size)

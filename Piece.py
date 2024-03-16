@@ -28,8 +28,8 @@ class Piece:
 
     def get_coordinates(self):
         tile_width, tile_height = (
-            window_width // board_size,
-            window_height // board_size,
+            window_width / board_size,
+            window_height / board_size,
         )
         x = self.tile[0] * tile_width
         # Invert the y-coordinate so (0,0) is at the top-left instead of the bottom-left
