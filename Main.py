@@ -158,13 +158,13 @@ def display_analysis(screen, game_analysis, history, analysis_color):
     explain = pygame.image.load(explain)
     explain = pygame.transform.scale(explain, (window_width, window_height))
     while running:
-        print(show_explanation)
 
         if not handle_key_events():
             break
-        if move_index == -1:
+
+        elif move_index == -1:
             analysis_board.draw(screen)
-        if 0 <= move_index < len(history):
+        elif 0 <= move_index < len(history):
             current_move, _ = history[move_index]
 
             if display_state == "start":
@@ -181,7 +181,6 @@ def display_analysis(screen, game_analysis, history, analysis_color):
 
                     best_move = best_move
                     display_state = "best_move"
-                    analysis_board.draw(screen)
                     analysis_board.show_move_made(
                         played_move, screen, True, is_played_move_best_move
                     )
@@ -189,7 +188,6 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     best_move = None
                     analysis_board.apply_move(current_move)
                     display_state = "played_move"
-                    analysis_board.draw(screen)
                     analysis_board.show_move_made(current_move, screen, False, False)
 
             if is_played_move_best_move:
@@ -202,6 +200,9 @@ def display_analysis(screen, game_analysis, history, analysis_color):
 
         if show_explanation:
             screen.blit(explain, (0, 0))
+        else:
+            screen.fill((255, 255, 255))
+            analysis_board.draw(screen)
 
         screen.blit(question_mark, question_mark_rect)
         pygame.display.update()
@@ -509,7 +510,8 @@ def main():
         # Assuming you have a lock defined somewhere in your code
 
         if ask_for_name:
-            network.close()
+            if game_online:
+                network.close()
             color = (100, 100, 100)
             screen.blit(backround, (0, 0))
             font = pygame.font.Font(None, window_height // 20)
