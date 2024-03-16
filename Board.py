@@ -510,8 +510,9 @@ class Board:
     def _execute_move(self, move_node: MoveNode):
 
         # Retrieve the piece to be moved
-        piece = move_node.piece
+
         from_tile = move_node.from_tile
+        piece = self.get_piece_at_tile(from_tile)
         to_tile = move_node.to_tile
         killed_piece = move_node.killed
 

@@ -23,15 +23,25 @@ class Network:
 
     def send(self, data):
         try:
-            self.client.send(pickle.dumps(data))
+            if self.id is not None:
+                self.client.send(pickle.dumps(data))
         except socket.error as e:
-            print(e)
+            print("problem sendoing data", e)
 
     def receive(self):
         try:
-            return pickle.loads(self.client.recv(2048))
+            if self.id is not None:
+                msg = pickle.loads(self.client.recv(2048))
+                if msg == "DISCONNECT!":
+                    self.client.close()
+                    self.id = None
+                return msg
         except socket.error as e:
-            print(e)
+            # TODO handle this exception
+            print("problem receinving data: ", e)
 
     def close(self):
-        self.client.close()
+        if self.id is not None:
+            self.send("DISCONNECT!")
+            self.client.close()
+            self.id = None

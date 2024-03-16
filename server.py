@@ -42,21 +42,20 @@ def start_server():
             msg = pickle.loads(white_player_socket.recv(BUFFER_SIZE))
             print(f"[{white_player_address}]: {msg}")
 
+            black_player_socket.send(pickle.dumps(msg))
+
             if msg == DISCONNECT_MSG:
                 connected = False
                 break
-
-            black_player_socket.send(pickle.dumps(msg))
 
             msg = pickle.loads(black_player_socket.recv(BUFFER_SIZE))
             print(f"[{black_player_address}]: {msg}")
 
+            white_player_socket.send(pickle.dumps(msg))
+
             if msg == DISCONNECT_MSG:
                 connected = False
                 break
-
-            white_player_socket.send(pickle.dumps(msg))
-
         except Exception as e:
             print(f"Error: {e}")
             break

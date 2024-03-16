@@ -7,6 +7,7 @@ from Network import Network
 import threading
 from DBManager import DBManager
 import os
+from time import sleep
 
 
 import matplotlib.pyplot as plt
@@ -19,6 +20,7 @@ from config import window_width, window_height, board_size, game_online
 move_lock = threading.Lock()
 
 FPS = 30
+MAX_RETRIES = 3
 fps_clock = pygame.time.Clock()
 
 RED = (255, 0, 0)
@@ -212,6 +214,9 @@ def receive_moves_forever(board, network):
         try:
             msg = network.receive()
             if msg:
+                if msg == "DISCONNECT!":
+                    print("Opponent has disconnected.")
+                    break
                 move = board.unserialize_move_node(msg)
                 print(f"Received move: {msg}")
                 board.apply_move(move)
@@ -334,6 +339,8 @@ def main():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                if game_online:
+                    network.close()
                 pygame.quit()
                 sys.exit()
                 run = False
@@ -372,13 +379,13 @@ def main():
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
 
         if game_online:
-            receive_thread = threading.Thread(
-                target=receive_moves_forever, args=(board, network)
-            )
-            receive_thread.daemon = (
-                True  # The thread will close when the main program exits
-            )
-            receive_thread.start()
+            # Check if the thread is None or not alive
+            if receive_thread is None or not receive_thread.is_alive() and network.id:
+                receive_thread = threading.Thread(
+                    target=receive_moves_forever, args=(board, network)
+                )
+                receive_thread.daemon = True
+                receive_thread.start()
 
         if game_online and is_white_to_play == player_color:
             if len(board.get_history()) > 0:
@@ -502,6 +509,7 @@ def main():
         # Assuming you have a lock defined somewhere in your code
 
         if ask_for_name:
+            network.close()
             color = (100, 100, 100)
             screen.blit(backround, (0, 0))
             font = pygame.font.Font(None, window_height // 20)
