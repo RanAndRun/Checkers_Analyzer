@@ -5,10 +5,11 @@ from time import sleep
 import copy
 from BoardNode import BoardNode
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from config import depth as DEPTH
 
 
 class CheckersAI:
-    def __init__(self, board, depth=2):
+    def __init__(self, board, depth=DEPTH):
         self.board = board
         self.depth = depth
 
@@ -130,6 +131,7 @@ class CheckersAI:
 
     def analyze_game(self, history, color):
         analysis_results = []
+        sum_of_played_move_scores = 0
 
         # Iterate over each move and corresponding board state
         for move, board in history:
@@ -152,12 +154,15 @@ class CheckersAI:
 
             # Perform evaluation and comparison for the move
             played_move_score, best_value, best_move = self.compare_move(move, board)
-
+            sum_of_played_move_scores += played_move_score
             # Append the results to the analysis_results list
 
             analysis_results.append((move, played_move_score, best_value, best_move))
+
+        # Calculate the average score of the played moves
+        average_played_move_score = sum_of_played_move_scores / len(history)
         print("results", analysis_results)
-        return analysis_results
+        return analysis_results, average_played_move_score
 
     def find_move_score(self, move, board):
         color_of_player = move.piece.color

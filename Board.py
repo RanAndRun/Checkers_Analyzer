@@ -3,9 +3,15 @@ import copy
 from Tile import Tile
 from Pawn import Pawn
 from Enums import Eplayers, Ecolors
-from config import window_width, window_height, board_size
 from os import path
-from config import window_width, window_height
+from config import (
+    window_width,
+    window_height,
+    board_size,
+    board_size,
+    tile_height,
+    tile_width,
+)
 
 from King import King
 from Piece import Piece
@@ -14,7 +20,6 @@ from MoveNode import MoveNode
 
 class Board:
 
-    tile_width, tile_height = window_width / board_size, window_height / board_size
     board_image = pygame.image.load(path.join("assets", "8x8_checkered_board.png"))
     size = (window_width, window_height)
     board_image = pygame.transform.scale(board_image, size)
@@ -39,18 +44,30 @@ class Board:
         self.move_history = []
         self.current_player = Eplayers.white
 
+        self.whites_turn = path.join("assets", "RedsTurn.png")
+        self.whites_turn = pygame.image.load(self.whites_turn)
+        self.whites_turn = pygame.transform.scale(
+            self.whites_turn, (tile_width, tile_height)
+        )
+
+        self.blacks_turn = path.join("assets", "BlacksTurn.png")
+        self.blacks_turn = pygame.image.load(self.blacks_turn)
+        self.blacks_turn = pygame.transform.scale(
+            self.blacks_turn, (tile_width, tile_height)
+        )
+
     def create_tiles(self):
         tiles = [[None for x in range(board_size)] for y in range(board_size)]
 
         x_point = 0
-        y_point = window_height - self.tile_height
+        y_point = window_height - tile_height
 
         for y in range(board_size):
             for x in range(board_size):
                 tiles[y][x] = Tile(x, y, x_point, y_point)
-                x_point = x_point + self.tile_width
+                x_point = x_point + tile_width
             x_point = 0
-            y_point = y_point - self.tile_height
+            y_point = y_point - tile_height
 
         return tiles
 
@@ -113,6 +130,16 @@ class Board:
 
     def draw(self, screen):
         screen.blit(self.board_image, (0, 0))
+        if self.current_player == Eplayers.white:
+            screen.blit(
+                self.whites_turn,
+                (window_width - tile_width, window_height - tile_height),
+            )
+        else:
+            screen.blit(
+                self.blacks_turn,
+                (window_width - tile_width, window_height - tile_height),
+            )
         for tile_x in range(board_size):
             for tile_y in range(board_size):
                 pawn = self.pieces_matrix[tile_y][tile_x]

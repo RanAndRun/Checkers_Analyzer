@@ -5,7 +5,8 @@ import pygame
 window_width = window_height = 1200
 board_size = 8
 game_online = False
-
+tile_width, tile_height = window_width / board_size, window_height / board_size
+depth = 2
 
 # def get_optimal_window_size(original_width, original_height):
 #     screen_info = pygame.display.Info()

@@ -157,39 +157,53 @@ def display_analysis(screen, game_analysis, history, analysis_color):
     explain = os.path.join("assets", "scroll.png")
     explain = pygame.image.load(explain)
     explain = pygame.transform.scale(explain, (window_width, window_height))
-    while running:
 
+    move_to_show = None
+    is_played_move_best_move = False
+    best_move = None
+    while running:
+        screen.fill((255, 255, 255))
+        analysis_board.draw(screen)
         if not handle_key_events():
             break
 
-        elif move_index == -1:
             analysis_board.draw(screen)
-        elif 0 <= move_index < len(history):
+        if move_index == -1:
+            analysis_board.draw(screen)
+        if 0 <= move_index < len(history):
             current_move, _ = history[move_index]
 
             if display_state == "start":
 
                 is_played_move_best_move = False
+
                 if current_move.piece.color == analysis_color:
                     played_move, move_score, best_move_score, best_move = game_analysis[
                         int(move_index / 2)
                     ]
                     analysis_board.apply_move(played_move)
+                    analysis_board.draw(screen)
 
                     if best_move.__eq__(played_move):
                         is_played_move_best_move = True
 
                     best_move = best_move
                     display_state = "best_move"
-                    analysis_board.show_move_made(
-                        played_move, screen, True, is_played_move_best_move
-                    )
+                    # analysis_board.show_move_made(
+                    #     played_move, screen, True, is_played_move_best_move
+                    # )
+                    move_to_show = played_move
                 else:
                     best_move = None
                     analysis_board.apply_move(current_move)
+                    analysis_board.draw(screen)
                     display_state = "played_move"
-                    analysis_board.show_move_made(current_move, screen, False, False)
+                    move_to_show = current_move
 
+                    # analysis_board.show_move_made(current_move, screen, False, False)
+        if show_explanation:
+            screen.blit(explain, (0, 0))
+        else:
             if is_played_move_best_move:
                 # show the played move in yellow
                 analysis_board.show_move_made(
@@ -197,12 +211,13 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                 )
             elif best_move is not None:
                 analysis_board.show_better_move(best_move, screen)
-
-        if show_explanation:
-            screen.blit(explain, (0, 0))
-        else:
-            screen.fill((255, 255, 255))
-            analysis_board.draw(screen)
+            if move_to_show:
+                analysis_board.show_move_made(
+                    move_to_show,
+                    screen,
+                    current_move.piece.color == analysis_color,
+                    is_played_move_best_move,
+                )
 
         screen.blit(question_mark, question_mark_rect)
         pygame.display.update()
@@ -547,8 +562,8 @@ def main():
                 color = Eplayers.white
 
             print("analyzing with player color", color)
-            game_analysis = checkers_ai.analyze_game(history, color)
-
+            game_analysis, average_score = checkers_ai.analyze_game(history, color)
+            print("average score", average_score)
             display_analysis(screen, game_analysis, history, color)
             analysis_started = False
             showing_graph = True
