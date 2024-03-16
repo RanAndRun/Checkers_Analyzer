@@ -589,7 +589,6 @@ class Board:
                 current_move = current_move.children[0]
             else:
                 current_move = []
-        print("reverse_move_stack", reverse_move_stack)
         return reverse_move_stack
 
     def undo_single_move(self, move_node):
