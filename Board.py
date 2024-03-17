@@ -354,12 +354,8 @@ class Board:
 
     def can_get_promoted(self, piece: Piece, to_tile: tuple) -> bool:
         if piece.color == Eplayers.white and to_tile[1] == board_size - 1:
-            print("can get promoted", piece, to_tile, piece.color)
-
             return True
         elif piece.color == Eplayers.black and to_tile[1] == 0:
-            print("can get promoted", piece, to_tile, piece.color)
-
             return True
         return False
 
@@ -900,6 +896,3 @@ class Board:
             [self.unserialize_move_node(child) for child in serialized["children"]],
         )
         return move_node
-
-
-# TODO undo board_history when undoing moves

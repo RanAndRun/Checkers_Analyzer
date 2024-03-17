@@ -389,6 +389,17 @@ def main():
                     board.undo_move()
                     board.switch_player()
                     is_white_to_play = not is_white_to_play
+
+                elif event.key == pygame.K_g:
+                    last_move, last_board = board.get_history()[-1]
+                    print(f"last move {last_move}, last board \n {last_board}")
+                    last_move_analysis = checkers_ai.evaluate_and_compare_move(
+                        last_move, last_board
+                    )
+                    print(last_move_analysis)
+                elif event.key == pygame.K_s:
+                    last_move, last_board = board.get_history()[-1]
+                    print(f"last move {last_move}, last board \n {last_board}")
                 else:
                     text += event.unicode if ask_for_name else ""
 

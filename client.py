@@ -39,7 +39,6 @@ def start_client():
         opponent_move = receive(client)
         print(f"[SERVER]: {opponent_move}")
 
-    # TODO implement the game loop
     connected = True
     while connected:
         msg = input("Enter a message: ")

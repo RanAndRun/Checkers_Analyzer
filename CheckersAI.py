@@ -66,12 +66,10 @@ class CheckersAI:
         with ThreadPoolExecutor() as executor:
             children = root_node.get_children()
             for child in children:
-                if len(children) == 1:
-                    depth = 0
                 future = executor.submit(
                     self.minimax,
                     child,
-                    depth,
+                    depth - 1,
                     float("-inf"),
                     float("inf"),
                     not is_max,  # Swap maximizingPlayer if is_max is False
@@ -89,43 +87,46 @@ class CheckersAI:
         return best_move, best_value
 
     def evaluate_and_compare_move(self, played_move: MoveNode, board: Board):
+        copy_of_board = copy.deepcopy(board)
+        secend_copy_of_board = copy.deepcopy(board)
+
         # Temporarily apply the played move
         color_of_player = played_move.piece.color
         is_max = (
-            color_of_player == Eplayers.black
+            color_of_player == Eplayers.white
         )  # If the played move is white, the next move is black, and vice versa
-        board.apply_move(played_move)
-
+        copy_of_board.apply_move(played_move)
+        print("copy of board", copy_of_board)
+        print("secend copy of board", secend_copy_of_board)
         # Create a BoardNode for the current board state after the move
-        after_move_node = BoardNode(board)
 
-        # Use minimax to evaluate the board state after the played move, looking 2 moves ahead
-        played_move_score = self.minimax(
-            after_move_node,
-            self.depth - 1,
-            -float("inf"),
-            float("inf"),
-            not is_max,
-        )
+        board_after_move = BoardNode(copy_of_board)
 
-        # Undo the move to restore the original board state
-        board.undo_move()
+        only_one_move = False
+        if len(board.every_move_for_player(color_of_player)) == 1:
+            only_one_move = True
+            print("only one move")
 
-        # Find and evaluate the best possible move from the original board state
-        best_move, best_move_score = self.find_best_move(board=board)
-        print("best move", best_move, best_move_score)
-        if best_move:
-            # Temporarily apply the best move
-            board.apply_move(best_move)
-            best_move_node = BoardNode(board)
-
-            # Evaluate the score after the best move
-            best_move_score = self.minimax(
-                best_move_node, self.depth, -float("inf"), float("inf"), is_max
+        with ThreadPoolExecutor() as executor:
+            played_move_score = executor.submit(
+                self.minimax,
+                board_after_move,
+                self.depth - 1,
+                float("-inf"),
+                float("inf"),
+                not is_max,  # Swap maximizingPlayer if is_max is False
             )
-            board.undo_move()
+            played_move_score = played_move_score.result()
+
+        if only_one_move:
+            best_move = played_move
+            best_move_score = played_move_score
         else:
-            best_move_score = -float("inf")
+            best_move, best_move_score = self.find_best_move(board=secend_copy_of_board)
+        print(f"best move {best_move}, score {best_move_score}")
+        print(f"played move {played_move}, score {played_move_score}")
+
+        # FIXME unwanted piece removing from board of killed piece.
 
         return played_move_score, best_move_score, best_move
 
@@ -153,7 +154,9 @@ class CheckersAI:
                 print("color", color)
 
             # Perform evaluation and comparison for the move
-            played_move_score, best_value, best_move = self.compare_move(move, board)
+            played_move_score, best_value, best_move = self.evaluate_and_compare_move(
+                move, board
+            )
             sum_of_played_move_scores += played_move_score
             # Append the results to the analysis_results list
 
@@ -164,20 +167,20 @@ class CheckersAI:
         print("results", analysis_results)
         return analysis_results, average_played_move_score
 
-    def find_move_score(self, move, board):
-        color_of_player = move.piece.color
-        is_max = color_of_player == Eplayers.white
-        board.apply_move(move)
-        move_node = BoardNode(board)
-        score = self.minimax(
-            move_node, self.depth - 1, -float("inf"), float("inf"), is_max
-        )
-        board.undo_move()
-        return score
+    # def find_move_score(self, move, board):
+    #     color_of_player = move.piece.color
+    #     is_max = color_of_player == Eplayers.white
+    #     board.apply_move(move)
+    #     move_node = BoardNode(board)
+    #     score = self.minimax(
+    #         move_node, self.depth - 1, -float("inf"), float("inf"), is_max
+    #     )
+    #     board.undo_move()
+    #     return score
 
-    def compare_move(self, move, board):
-        is_max = True if move.piece.color == Eplayers.white else False
-        best_move, best_value = self.find_best_move(board=board, is_max=is_max)
-        played_move_score = self.find_move_score(move, board)
+    # def compare_move(self, move, board):
+    #     is_max = True if move.piece.color == Eplayers.white else False
+    #     best_move, best_value = self.find_best_move(board=board, is_max=is_max)
+    #     played_move_score = self.find_move_score(move, board)
 
-        return played_move_score, best_value, best_move
+    #     return played_move_score, best_value, best_move
