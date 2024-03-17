@@ -7,14 +7,11 @@ import copy
 
 
 class Pawn(Piece):
-    white_pawn_img = os.path.join("assets", "red.png")
-    black_pawn_img = os.path.join("assets", "black.png")
 
     def __init__(self, tile: Tile, color: Eplayers):
+        self.white_pawn_img = os.path.join("assets", "red.png")
+        self.black_pawn_img = os.path.join("assets", "black.png")
         super().__init__(tile, color, self.white_pawn_img, self.black_pawn_img)
-        # Store the image paths as attributes
-        self.white_img_path = self.white_pawn_img
-        self.black_img_path = self.black_pawn_img
 
     def __deepcopy__(self, memo):
         # Create a new Pawn instance with copied tile and same color

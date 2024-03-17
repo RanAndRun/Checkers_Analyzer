@@ -1,4 +1,4 @@
-from config import window_width, window_height, board_size
+from config import *
 import pygame
 import os
 import copy
@@ -6,16 +6,13 @@ from Enums import Ecolors
 
 
 class Tile:
-    tile_width, tile_height = window_width / board_size, window_height / board_size
 
     def __init__(self, x, y, x_point, y_point):
         self.row = y
         self.column = x
         self.x_point = x_point
         self.y_point = y_point
-        self.tile_rect = pygame.Rect(
-            x_point, y_point, self.tile_width, self.tile_height
-        )
+        self.tile_rect = pygame.Rect(x_point, y_point, tile_size, tile_size)
 
     def get_cordinates(self):
         return self.x_point, self.y_point

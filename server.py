@@ -1,19 +1,9 @@
 import socket
 import pickle
 
+
 DISCONNECT_MSG = "DISCONNECT!"
-HEADER = 64
-FORMAT = "utf-8"
-
 BUFFER_SIZE = 2048
-
-
-def send(data, client: socket.socket):
-    serialized_data = pickle.dumps(data)
-    send_length = str(len(serialized_data)).encode(FORMAT)
-    send_length += b" " * (HEADER - len(send_length))
-    client.send(send_length)
-    client.send(serialized_data)
 
 
 def start_server():

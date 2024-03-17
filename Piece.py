@@ -2,12 +2,10 @@ from Enums import *
 from Tile import *
 from time import sleep
 from pygame import display
+from config import *
 
 
 class Piece:
-
-    scale_factor_width = 1
-    scale_factor_height = 1
 
     def __init__(self, tile: tuple, color: Eplayers, white_img_path, black_img_path):
         self.alive = True
@@ -20,7 +18,7 @@ class Piece:
         else:
             self.image = pygame.image.load(black_img_path)
 
-        size = (window_width / 8, window_height / 8)
+        size = (window_size / board_size, window_size / board_size)
         self.image = pygame.transform.scale(self.image, size)
 
     def move(self, to_tile: tuple[int, int]):
@@ -28,27 +26,18 @@ class Piece:
 
     def get_coordinates(self):
         tile_width, tile_height = (
-            window_width / board_size,
-            window_height / board_size,
+            window_size / board_size,
+            window_size / board_size,
         )
         x = self.tile[0] * tile_width
-        # Invert the y-coordinate so (0,0) is at the top-left instead of the bottom-left
         y = (board_size - 1 - self.tile[1]) * tile_height
+
         return x, y
 
     def draw(self, screen):
-        # Assuming self.tile is a Tile object with x, y pixel coordinates
         x, y = self.get_coordinates()
-        dest = (
-            x * Piece.scale_factor_width,
-            y * Piece.scale_factor_height,
-        )
+        dest = (x, y)
         screen.blit(self.image, dest)
-
-    @classmethod
-    def update_scale_factors(cls, scale_factor_width, scale_factor_height):
-        cls.scale_factor_width = scale_factor_width
-        cls.scale_factor_height = scale_factor_height
 
     def killed(self):
         self.alive = False

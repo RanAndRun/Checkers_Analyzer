@@ -33,20 +33,20 @@ if game_online:
 
 
 pygame.init()
-screen = pygame.display.set_mode((window_width, window_height))
+screen = pygame.display.set_mode((window_size, window_size))
 pygame.display.set_caption("Checkers_Analyzer")
 
 explain = os.path.join("assets", "scroll.png")
 explain = pygame.image.load(explain)
-explain = pygame.transform.scale(explain, (window_width, window_height))
+explain = pygame.transform.scale(explain, (window_size, window_size))
 
 question_mark = os.path.join("assets", "questionMark.png")
 question_mark = pygame.image.load(question_mark)
-question_mark = pygame.transform.scale(question_mark, (tile_width, tile_height))
+question_mark = pygame.transform.scale(question_mark, (tile_size, tile_size))
 
 backround = os.path.join("assets", "backround.jpg")
 backround = pygame.image.load(backround)
-backround = pygame.transform.scale(backround, (window_width, window_height))
+backround = pygame.transform.scale(backround, (window_size, window_size))
 
 
 def handle_mouse_click(
@@ -234,27 +234,22 @@ def receive_moves_forever(board, network):
             print(f"Error receiving move: {e}")
 
 
-def show_win_rate_graph(game_results):
+def get_graphs(game_results):
     global screen
     if not isinstance(game_results, list) or not game_results:
-        print("game_results must be a non-empty list.")
-        return False
-
-    if not all(
-        isinstance(record, (list, tuple)) and len(record) == 3
-        for record in game_results
-    ):
-        print(
-            "Each element of game_results must be a tuple or list with three elements."
-        )
         return False
 
     # Dictionary to keep track of each player's wins, games, and cumulative win rate
     players_data = {}
 
-    for name, game_index, win in game_results:
+    for name, game_index, win, game_score in game_results:
         if name not in players_data:
-            players_data[name] = {"wins": 0, "games": 0, "win_rates": []}
+            players_data[name] = {
+                "wins": 0,
+                "games": 0,
+                "win_rates": [],
+                "game_scores": [],
+            }
 
         players_data[name]["games"] += 1
         if win:
@@ -262,38 +257,33 @@ def show_win_rate_graph(game_results):
 
         current_win_rate = players_data[name]["wins"] / players_data[name]["games"]
         players_data[name]["win_rates"].append(current_win_rate)
+        players_data[name]["game_scores"].append(game_score)
 
-    # Plotting
-    fig, ax = plt.subplots()
+    def plot_graph(data_key, y_label, title):
+        fig, ax = plt.subplots()
+        for name, data in players_data.items():
+            ax.plot(range(1, len(data[data_key]) + 1), data[data_key], label=name)
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.set_xlabel("Game Number")
+        ax.set_ylabel(y_label)
+        ax.set_title(title)
+        plt.legend()
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format="png")
+        plt.close(fig)
+        buffer.seek(0)
+        return buffer
 
-    for name, data in players_data.items():
-        ax.plot(range(1, len(data["win_rates"]) + 1), data["win_rates"], label=name)
+    win_rate_buffer = plot_graph("win_rates", "Win Rate", "Win Rate Over Time")
+    game_score_buffer = plot_graph("game_scores", "Game Score", "Game Score Over Time")
 
-    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-    ax.set_ylim(0, 1.2)  # Set the limits for the y-axis
-    ax.set_xlabel("Game Number")
-    ax.set_ylabel("Win Rate")
-    ax.set_title("Win Rate Over Time")
-    plt.legend()
-    # plt.show()
+    def load_pygame_image(buffer):
+        image = pygame.image.load(buffer)
+        rect = image.get_rect()
+        image = pygame.transform.scale(image, window_size)
+        return image, rect
 
-    buffer = io.BytesIO()
-    plt.savefig(buffer, format="png")
-    plt.close(fig)  # Close the figure to free memory
-    buffer.seek(0)  # Rewind the buffer to the beginning
-
-    # Load the image into Pygame and blit it to the screen
-    plot_image = pygame.image.load(buffer)
-    plot_rect = plot_image.get_rect()
-
-    # Resize the image to fit the pygame screen
-    plot_image = pygame.transform.scale(plot_image, (window_width, window_height))
-    screen.blit(plot_image, plot_rect)
-    pygame.display.flip()  # Update the screen
-
-    # Clear the buffer
-    buffer.close()
-    return True
+    return load_pygame_image(win_rate_buffer), load_pygame_image(game_score_buffer)
 
 
 def main():
@@ -518,13 +508,13 @@ def main():
                 network.close()
             color = (100, 100, 100)
             screen.blit(backround, (0, 0))
-            font = pygame.font.Font(None, window_height // 20)
+            font = pygame.font.Font(None, window_size // 20)
 
             txt_surface = font.render(text, True, color)
 
-            input_box_width = int(window_width * 0.35)
-            input_box_x = (window_width - input_box_width) // 2
-            input_box_y = int(window_height * 0.1)
+            input_box_width = int(window_size * 0.35)
+            input_box_x = (window_size - input_box_width) // 2
+            input_box_y = int(window_size * 0.1)
 
             input_box = pygame.Rect(input_box_x, input_box_y, input_box_width, 32)
 
@@ -534,10 +524,10 @@ def main():
             txt_surface = font.render(
                 "Enter your name. Name must contain at least one character", True, BLUE
             )
-            prompt_position_y = int(window_height * 0.05)
+            prompt_position_y = int(window_size * 0.05)
             screen.blit(
                 txt_surface,
-                ((window_width - txt_surface.get_width()) // 2, prompt_position_y),
+                ((window_size - txt_surface.get_width()) // 2, prompt_position_y),
             )
 
             pygame.display.flip()
@@ -559,7 +549,7 @@ def main():
 
         if showing_graph:
             matches = DBM.get_matches_for_name(text)
-            if show_win_rate_graph(matches) == False:
+            if get_graphs(matches) == False:
                 pygame.quit()
                 sys.exit()
 

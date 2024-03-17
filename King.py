@@ -6,15 +6,11 @@ import copy
 
 
 class King(Piece):
-    white_king_img = os.path.join("assets", "redKing.png")
-    black_king_img = os.path.join("assets", "blackKing.png")
 
     def __init__(self, tile: Tile, color: Eplayers):
+        self.white_king_img = os.path.join("assets", "redKing.png")
+        self.black_king_img = os.path.join("assets", "blackKing.png")
         super().__init__(tile, color, self.white_king_img, self.black_king_img)
-
-    # def __deepcopy__(self, memo):
-    #     # Call the deepcopy method of the superclass (Piece)
-    #     return super().__deepcopy__(memo)
 
     def __deepcopy__(self, memo):
         # Create a new Pawn instance with copied tile and same color

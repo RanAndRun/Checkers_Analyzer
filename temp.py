@@ -7,7 +7,7 @@ from King import King
 
 class Board:
     board_image = pygame.image.load(os.path.join("assets", "8x8_checkered_board.png"))
-    tile_width, tile_height = window_width // board_size, window_height // board_size
+    tile_width, tile_height = window_size // board_size, window_height // board_size
     tile_pawn = {}
 
     def __init__(self):

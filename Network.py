@@ -1,6 +1,9 @@
 import socket
 import pickle
 
+DISCONNECT_MSG = "DISCONNECT!"
+BUFFER_SIZE = 2048
+
 
 class Network:
     def __init__(self, server_address=("10.100.102.33", 12345)):
@@ -15,7 +18,7 @@ class Network:
             try:
                 self.client.connect(self.addr)
                 self.id = pickle.loads(
-                    self.client.recv(2048)
+                    self.client.recv(BUFFER_SIZE)
                 )  # Deserialize the received data
             except Exception as e:
                 print(e)
@@ -31,8 +34,8 @@ class Network:
     def receive(self):
         try:
             if self.id is not None:
-                msg = pickle.loads(self.client.recv(2048))
-                if msg == "DISCONNECT!":
+                msg = pickle.loads(self.client.recv(BUFFER_SIZE))
+                if msg == DISCONNECT_MSG:
                     self.client.close()
                     self.id = None
                 return msg
@@ -42,6 +45,6 @@ class Network:
 
     def close(self):
         if self.id is not None:
-            self.send("DISCONNECT!")
+            self.send(DISCONNECT_MSG)
             self.client.close()
             self.id = None
