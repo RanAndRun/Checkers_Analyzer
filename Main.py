@@ -206,8 +206,12 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     current_move.piece.color == analysis_color,
                     is_played_move_best_move,
                 )
+            if is_played_move_best_move:
+                # show the played move in yellow
+                analysis_board.show_move_made(
+                    current_move, screen, True, is_played_move_best_move
+                )
             elif best_move is not None:
-                # show the best move in blue
                 analysis_board.show_better_move(best_move, screen)
 
         screen.blit(question_mark, question_mark_rect)
