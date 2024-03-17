@@ -4,15 +4,7 @@ from Tile import Tile
 from Pawn import Pawn
 from Enums import Eplayers, Ecolors
 from os import path
-from config import (
-    window_width,
-    window_height,
-    board_size,
-    board_size,
-    tile_height,
-    tile_width,
-)
-
+from config import *
 from King import King
 from Piece import Piece
 from MoveNode import MoveNode
@@ -168,7 +160,6 @@ class Board:
         is_played_best_move,
     ):
         if not move:
-            print("No move to show")
             return
 
         # Determine the color based on the player analyzing the move

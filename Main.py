@@ -7,39 +7,46 @@ from Network import Network
 import threading
 from DBManager import DBManager
 import os
-from time import sleep
-
-
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import io
-
 from CheckersAI import CheckersAI
-from config import window_width, window_height, board_size, game_online
+from config import *
 
-move_lock = threading.Lock()
+
+MOVE_LOCK = threading.Lock()
 
 FPS = 30
 MAX_RETRIES = 3
-fps_clock = pygame.time.Clock()
+FPS_CLOCK = pygame.time.Clock()
 
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 
-pygame.init()
-
-screen = pygame.display.set_mode((window_width, window_height))
-pygame.display.set_caption("Checkers_Analyzer")
-
+is_white_to_play = True
+player_color = True
 
 if game_online:
     network = Network()
 
-is_white_to_play = True
-player_color = True
-move_lock = threading.Lock()
+
+pygame.init()
+screen = pygame.display.set_mode((window_width, window_height))
+pygame.display.set_caption("Checkers_Analyzer")
+
+explain = os.path.join("assets", "scroll.png")
+explain = pygame.image.load(explain)
+explain = pygame.transform.scale(explain, (window_width, window_height))
+
+question_mark = os.path.join("assets", "questionMark.png")
+question_mark = pygame.image.load(question_mark)
+question_mark = pygame.transform.scale(question_mark, (tile_width, tile_height))
+
+backround = os.path.join("assets", "backround.jpg")
+backround = pygame.image.load(backround)
+backround = pygame.transform.scale(backround, (window_width, window_height))
 
 
 def handle_mouse_click(
@@ -101,10 +108,11 @@ def handle_mouse_click(
 
 
 def display_analysis(screen, game_analysis, history, analysis_color):
-
     def handle_key_events():
         nonlocal move_index, display_state, mouse_clicked, mouse_x, mouse_y, analysis_board, show_explanation
         global running
+        global explain
+        global question_mark
         for event in pygame.event.get():
             if (
                 event.type == pygame.QUIT
@@ -138,39 +146,29 @@ def display_analysis(screen, game_analysis, history, analysis_color):
     move_index = -1
     mouse_clicked, mouse_x, mouse_y, show_explanation = False, 0, 0, False
 
-    question_mark = os.path.join("assets", "questionMark.png")
-    question_mark = pygame.image.load(question_mark)
-    question_mark = pygame.transform.scale(
-        question_mark, (window_width * 0.1, window_height * 0.1)
-    )
     question_mark_rect = question_mark.get_rect()
 
     display_state = "start"  # Can be 'start', 'played_move', 'best_move'
-    last_update_time = pygame.time.get_ticks()
-    screen.fill((255, 255, 255))
 
+    screen.fill((255, 255, 255))
     analysis_board.draw(screen)
+
     screen.blit(question_mark, question_mark_rect)
     pygame.display.update()
-
-    # explantion
-    explain = os.path.join("assets", "scroll.png")
-    explain = pygame.image.load(explain)
-    explain = pygame.transform.scale(explain, (window_width, window_height))
 
     move_to_show = None
     is_played_move_best_move = False
     best_move = None
+
     while running:
         screen.fill((255, 255, 255))
         analysis_board.draw(screen)
         if not handle_key_events():
             break
 
-            analysis_board.draw(screen)
         if move_index == -1:
             analysis_board.draw(screen)
-        if 0 <= move_index < len(history):
+        elif 0 <= move_index < len(history):
             current_move, _ = history[move_index]
 
             if display_state == "start":
@@ -189,9 +187,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
 
                     best_move = best_move
                     display_state = "best_move"
-                    # analysis_board.show_move_made(
-                    #     played_move, screen, True, is_played_move_best_move
-                    # )
+
                     move_to_show = played_move
                 else:
                     best_move = None
@@ -200,17 +196,9 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     display_state = "played_move"
                     move_to_show = current_move
 
-                    # analysis_board.show_move_made(current_move, screen, False, False)
         if show_explanation:
             screen.blit(explain, (0, 0))
         else:
-            if is_played_move_best_move:
-                # show the played move in yellow
-                analysis_board.show_move_made(
-                    current_move, screen, True, is_played_move_best_move
-                )
-            elif best_move is not None:
-                analysis_board.show_better_move(best_move, screen)
             if move_to_show:
                 analysis_board.show_move_made(
                     move_to_show,
@@ -218,6 +206,9 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     current_move.piece.color == analysis_color,
                     is_played_move_best_move,
                 )
+            elif best_move is not None:
+                # show the best move in blue
+                analysis_board.show_better_move(best_move, screen)
 
         screen.blit(question_mark, question_mark_rect)
         pygame.display.update()
@@ -225,7 +216,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
 
 def receive_moves_forever(board, network):
     global is_white_to_play
-    global move_lock
+    global MOVE_LOCK
     while True:  # Continuous loop
         try:
             msg = network.receive()
@@ -236,12 +227,9 @@ def receive_moves_forever(board, network):
                 move = board.unserialize_move_node(msg)
                 print(f"Received move: {msg}")
                 board.apply_move(move)
-                with move_lock:  # Ensure thread-safe access to is_white_to_play
+                with MOVE_LOCK:  # Ensure thread-safe access to is_white_to_play
                     is_white_to_play = not is_white_to_play
                 pygame.display.update()
-                print("board color", board.current_player)
-                print("is white to play", is_white_to_play)
-                print("color player", player_color)
         except Exception as e:
             print(f"Error receiving move: {e}")
 
@@ -311,45 +299,36 @@ def show_win_rate_graph(game_results):
 def main():
     global is_white_to_play
     global game_online
-    global move_lock
+    global MOVE_LOCK
     global network
     global player_color
-    receive_thread = None
 
+    receive_thread = None
     first_selection = None
     second_selection = None
+
     if game_online:
         player_color = network.connect()
 
-    # Declare global to modify the global variable
-    print(player_color)
     hasJumped = None
     run = True
     text = ""
     mouse_x = 0  # store x cordinate of mouse event
     mouse_y = 0  # y cordinate
+
     board = Board(screen)
     checkers_ai = CheckersAI(board)
 
     current_directory = os.getcwd()
     db_path = os.path.join(current_directory, "checkers.db")
     DBM = DBManager(db_path)
-    timer = 0
+
     before_move = None
     analysis_started = False
     ask_for_name = False
     showing_graph = False
 
-    backround = os.path.join("assets", "backround.jpg")
-    backround = pygame.image.load(backround)
-    backround = pygame.transform.scale(backround, (window_width, window_height))
-
     while run:
-
-        timer += fps_clock.tick_busy_loop(
-            30
-        )  # Adjust the frame rate as needed (30 frames per second in this example)
-
         board.draw(screen)
         mouse_clicked = False
 
@@ -359,7 +338,6 @@ def main():
                     network.close()
                 pygame.quit()
                 sys.exit()
-                run = False
             elif event.type == pygame.MOUSEMOTION:
                 mouse_x, mouse_y = event.pos
             elif event.type == pygame.MOUSEBUTTONUP:

@@ -132,6 +132,7 @@ class CheckersAI:
 
     def analyze_game(self, history, color):
         analysis_results = []
+        prev_score = 0
         sum_of_played_move_scores = 0
 
         # Iterate over each move and corresponding board state
@@ -157,7 +158,8 @@ class CheckersAI:
             played_move_score, best_value, best_move = self.evaluate_and_compare_move(
                 move, board
             )
-            sum_of_played_move_scores += played_move_score
+            sum_of_played_move_scores += played_move_score - prev_score
+            prev_score = played_move_score
             # Append the results to the analysis_results list
 
             analysis_results.append((move, played_move_score, best_value, best_move))

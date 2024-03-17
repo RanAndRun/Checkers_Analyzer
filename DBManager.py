@@ -14,13 +14,14 @@ class DBManager:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT,
                 game_index INTEGER,
-                won BOOLEAN
+                won BOOLEAN,
+                score INTEGER
             )
             """
         )
         self.conn.commit()
 
-    def add_player(self, name, won):
+    def add_player(self, name, won, score):
         try:
             # Check the current index for the player
             self.cursor.execute(
@@ -31,8 +32,8 @@ class DBManager:
 
             # Insert the new record
             self.cursor.execute(
-                "INSERT INTO players (name, game_index, won) VALUES (?, ?, ?)",
-                (name, current_index, won),
+                "INSERT INTO players (name, game_index, won, score) VALUES (?, ?, ?, ?)",
+                (name, current_index, won, score),
             )
             self.conn.commit()
         except sqlite3.Error as e:
@@ -41,7 +42,8 @@ class DBManager:
     def get_matches_for_name(self, name):
         try:
             self.cursor.execute(
-                "SELECT name, game_index, won FROM players WHERE name = ?", (name,)
+                "SELECT name, game_index, won, score FROM players WHERE name = ?",
+                (name,),
             )
             return self.cursor.fetchall()
         except sqlite3.Error as e:
