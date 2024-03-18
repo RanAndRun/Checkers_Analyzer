@@ -12,7 +12,7 @@ class Tile:
         self.column = x
         self.x_point = x_point
         self.y_point = y_point
-        self.tile_rect = pygame.Rect(x_point, y_point, tile_size, tile_size)
+        self.tile_rect = pygame.Rect(x_point, y_point, TILE_SIZE, TILE_SIZE)
 
     def get_cordinates(self):
         return self.x_point, self.y_point

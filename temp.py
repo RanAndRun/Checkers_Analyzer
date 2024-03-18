@@ -7,7 +7,7 @@ from King import King
 
 class Board:
     board_image = pygame.image.load(os.path.join("assets", "8x8_checkered_board.png"))
-    tile_width, tile_height = window_size // board_size, window_height // board_size
+    tile_width, tile_height = WINDOW_SIZE // BOARD_SIZE, window_height // BOARD_SIZE
     tile_pawn = {}
 
     def __init__(self):
@@ -25,21 +25,21 @@ class Board:
 
     def draw(self):
         screen.blit(self.board_image, (0, 0))
-        for tile_x in range(board_size):
-            for tile_y in range(board_size):
+        for tile_x in range(BOARD_SIZE):
+            for tile_y in range(BOARD_SIZE):
                 curr_tile = self.get_tile_from_location(tile_x, tile_y)
                 pawn = self.get_pawn_from_tile[curr_tile]
                 if pawn and pawn.is_alive():
                     self.get_pawn_from_tile[curr_tile].draw()
 
     def create_tiles(self):
-        tiles = [[None for x in range(board_size)] for y in range(board_size)]
+        tiles = [[None for x in range(BOARD_SIZE)] for y in range(BOARD_SIZE)]
 
         x_point = 0
         y_point = window_height - self.tile_height
 
-        for y in range(board_size):
-            for x in range(board_size):
+        for y in range(BOARD_SIZE):
+            for x in range(BOARD_SIZE):
                 tiles[y][x] = Tile(x, y, x_point, y_point)
                 x_point = x_point + self.tile_width
             x_point = 0
@@ -55,14 +55,14 @@ class Board:
 
         for row in range(3):
             mod = row % 2
-            for column in range(0 + mod, board_size - 1 + mod, 2):
+            for column in range(0 + mod, BOARD_SIZE - 1 + mod, 2):
                 self.get_pawn_from_tile[self.tiles[row][column]] = Pawn(
                     self.tiles[row][column], color=EColor.white
                 )
 
         for row in range(7, 4, -1):
             mod = row % 2
-            for column in range(0 + mod, board_size - 1 + mod, 2):
+            for column in range(0 + mod, BOARD_SIZE - 1 + mod, 2):
                 self.get_pawn_from_tile[self.tiles[row][column]] = Pawn(
                     self.tiles[row][column], color=EColor.black
                 )
@@ -111,7 +111,7 @@ class Board:
                 dx, dy = direction
                 found = None
 
-                for step in range(1, board_size):
+                for step in range(1, BOARD_SIZE):
                     new_x, new_y = x + step * dx, y + step * dy
 
                     if not self.is_location_inside_board(new_x, new_y):
@@ -180,7 +180,7 @@ class Board:
                 dx, dy = direction
                 found = None
 
-                for step in range(1, board_size):
+                for step in range(1, BOARD_SIZE):
                     new_x, new_y = x + step * dx, y + step * dy
 
                     if not self.is_location_inside_board(new_x, new_y):
@@ -217,7 +217,7 @@ class Board:
         if piece is King:
             return
 
-        if piece.color == EColor.white and tile.row != board_size - 1:
+        if piece.color == EColor.white and tile.row != BOARD_SIZE - 1:
             return
         if piece.color == EColor.black and tile.row != 0:
             return
@@ -238,8 +238,8 @@ class Board:
         return 0 <= x < len(self.tiles) and 0 <= y < len(self.tiles[0])
 
     def get_tile_at_pixel(self, mouse_x, mouse_y):
-        for x_tile in range(board_size):
-            for y_tile in range(board_size):
+        for x_tile in range(BOARD_SIZE):
+            for y_tile in range(BOARD_SIZE):
                 currTile = self.get_tile_from_location(x_tile, y_tile)
                 if currTile.tile_rect.collidepoint(mouse_x, mouse_y):
                     return currTile

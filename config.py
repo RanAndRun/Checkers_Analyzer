@@ -2,8 +2,12 @@
 import pygame
 
 
-window_size = 1000
-board_size = 8
-game_online = False
-tile_size = window_size / board_size
-depth = 3
+WINDOW_SIZE = 1000
+BOARD_SIZE = 8
+GAME_ONLINE = False
+TILE_SIZE = WINDOW_SIZE / BOARD_SIZE
+SIZE = (WINDOW_SIZE, WINDOW_SIZE)
+DEPTH = 3
+DISCONNECT_MSG = "DISCONNECT!"
+BUFFER_SIZE = 2048
+SERVER_ADDRESS = ("10.100.102.33", 12345)

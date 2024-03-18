@@ -28,25 +28,25 @@ BLUE = (0, 0, 255)
 is_white_to_play = True
 player_color = True
 
-if game_online:
+if GAME_ONLINE:
     network = Network()
 
 
 pygame.init()
-screen = pygame.display.set_mode((window_size, window_size))
+screen = pygame.display.set_mode(SIZE)
 pygame.display.set_caption("Checkers_Analyzer")
 
 explain = os.path.join("assets", "scroll.png")
 explain = pygame.image.load(explain)
-explain = pygame.transform.scale(explain, (window_size, window_size))
+explain = pygame.transform.scale(explain, SIZE)
 
 question_mark = os.path.join("assets", "questionMark.png")
 question_mark = pygame.image.load(question_mark)
-question_mark = pygame.transform.scale(question_mark, (tile_size, tile_size))
+question_mark = pygame.transform.scale(question_mark, (TILE_SIZE, TILE_SIZE))
 
 backround = os.path.join("assets", "backround.jpg")
 backround = pygame.image.load(backround)
-backround = pygame.transform.scale(backround, (window_size, window_size))
+backround = pygame.transform.scale(backround, SIZE)
 
 
 def handle_mouse_click(
@@ -97,7 +97,7 @@ def handle_mouse_click(
                     board.switch_player()
 
                     board.add_move_to_history(before_move)
-                    if game_online:
+                    if GAME_ONLINE:
                         simplified_move_node = Board.serialize_move_node(before_move)
                         network.send(simplified_move_node)
                     hasJumped = None
@@ -226,7 +226,7 @@ def receive_moves_forever(board, network):
         try:
             msg = network.receive()
             if msg:
-                if msg == "DISCONNECT!":
+                if msg == DISCONNECT_MSG:
                     print("Opponent has disconnected.")
                     break
                 move = board.unserialize_move_node(msg)
@@ -242,7 +242,8 @@ def receive_moves_forever(board, network):
 def get_graphs(game_results):
     global screen
     if not isinstance(game_results, list) or not game_results:
-        return False
+        pygame.quit()
+        sys.exit()
 
     # Dictionary to keep track of each player's wins, games, and cumulative win rate
     players_data = {}
@@ -285,7 +286,7 @@ def get_graphs(game_results):
     def load_pygame_image(buffer):
         image = pygame.image.load(buffer)
         rect = image.get_rect()
-        image = pygame.transform.scale(image, window_size)
+        image = pygame.transform.scale(image, SIZE)
         return image, rect
 
     return load_pygame_image(win_rate_buffer), load_pygame_image(game_score_buffer)
@@ -293,7 +294,7 @@ def get_graphs(game_results):
 
 def main():
     global is_white_to_play
-    global game_online
+    global GAME_ONLINE
     global MOVE_LOCK
     global network
     global player_color
@@ -302,7 +303,7 @@ def main():
     first_selection = None
     second_selection = None
 
-    if game_online:
+    if GAME_ONLINE:
         player_color = network.connect()
 
     hasJumped = None
@@ -322,6 +323,8 @@ def main():
     analysis_started = False
     ask_for_name = False
     showing_graph = False
+    graph_created = False
+    show_first = True
 
     while run:
         board.draw(screen)
@@ -329,7 +332,7 @@ def main():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                if game_online:
+                if GAME_ONLINE:
                     network.close()
                 pygame.quit()
                 sys.exit()
@@ -338,6 +341,7 @@ def main():
             elif event.type == pygame.MOUSEBUTTONUP:
                 mouse_x, mouse_y = event.pos
                 mouse_clicked = True
+
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_BACKSPACE:
                     text = text[:-1]
@@ -352,33 +356,16 @@ def main():
 
                         analysis_started = True
                         ask_for_name = False
-
-                elif event.key == pygame.K_k:
-                    board.undo_move()
-                    board.switch_player()
-                    is_white_to_play = not is_white_to_play
-
-                elif event.key == pygame.K_g:
-                    last_move, last_board = board.get_history()[-1]
-                    print(f"last move {last_move}, last board \n {last_board}")
-                    copy_of_board = copy.deepcopy(last_board)
-                    last_move_analysis = checkers_ai.evaluate_and_compare_move(
-                        last_move, copy_of_board
-                    )
-                    print(last_move_analysis)
-                elif event.key == pygame.K_s:
-                    print("history", board.get_history())
-                    last_move, last_board = board.get_history()[-1]
-                    print(f"last move {last_move}, last board \n {last_board}")
-
-                elif event.key == pygame.K_r:
-                    print("main board", board)
+                elif event.key == pygame.K_RIGHT:
+                    show_first = True
+                elif event.key == pygame.K_LEFT:
+                    show_first = False
                 else:
                     text += event.unicode if ask_for_name else ""
 
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
 
-        if game_online:
+        if GAME_ONLINE:
             # Check if the thread is None or not alive
             if receive_thread is None or not receive_thread.is_alive() and network.id:
                 receive_thread = threading.Thread(
@@ -387,7 +374,7 @@ def main():
                 receive_thread.daemon = True
                 receive_thread.start()
 
-        if game_online and is_white_to_play == player_color:
+        if GAME_ONLINE and is_white_to_play == player_color:
             if len(board.get_history()) > 0:
                 last_move = board.get_history()[-1]
                 last_move_from_tile_x, last_move_from_tile_y = last_move[0].from_tile
@@ -447,7 +434,7 @@ def main():
                 x, y = first_selection
                 board.tiles[y][x].glow(screen, Ecolors.blue)
 
-        if not game_online:
+        if not GAME_ONLINE:
             if len(board.get_history()) > 0:
                 last_move = board.get_history()[-1]
                 last_move_from_tile_x, last_move_from_tile_y = last_move[0].from_tile
@@ -509,17 +496,17 @@ def main():
         # Assuming you have a lock defined somewhere in your code
 
         if ask_for_name:
-            if game_online:
+            if GAME_ONLINE:
                 network.close()
             color = (100, 100, 100)
             screen.blit(backround, (0, 0))
-            font = pygame.font.Font(None, window_size // 20)
+            font = pygame.font.Font(None, WINDOW_SIZE // 20)
 
             txt_surface = font.render(text, True, color)
 
-            input_box_width = int(window_size * 0.35)
-            input_box_x = (window_size - input_box_width) // 2
-            input_box_y = int(window_size * 0.1)
+            input_box_width = int(WINDOW_SIZE * 0.35)
+            input_box_x = (WINDOW_SIZE - input_box_width) // 2
+            input_box_y = int(WINDOW_SIZE * 0.1)
 
             input_box = pygame.Rect(input_box_x, input_box_y, input_box_width, 32)
 
@@ -527,12 +514,12 @@ def main():
             screen.blit(txt_surface, (input_box.x + 5, input_box.y + 5))
 
             txt_surface = font.render(
-                "Enter your name. Name must contain at least one character", True, BLUE
+                "Enter your name. One character minimum.", True, BLUE
             )
-            prompt_position_y = int(window_size * 0.05)
+            prompt_position_y = int(WINDOW_SIZE * 0.05)
             screen.blit(
                 txt_surface,
-                ((window_size - txt_surface.get_width()) // 2, prompt_position_y),
+                ((WINDOW_SIZE - txt_surface.get_width()) // 2, prompt_position_y),
             )
 
             pygame.display.flip()
@@ -555,15 +542,28 @@ def main():
             elif winner == Eplayers.black:
                 DBM.add_player(text, False if player_color else True, average_score)
 
+            please_wait_text = font.render("Analyzing... Please wait", True, BLACK)
+            please_wait_text_y = int(WINDOW_SIZE * 0.07)
+            screen.blit(
+                please_wait_text,
+                ((WINDOW_SIZE - please_wait_text.get_width()) // 2, please_wait_text_y),
+            )
             display_analysis(screen, game_analysis, history, color)
             analysis_started = False
             showing_graph = True
 
         if showing_graph:
-            matches = DBM.get_matches_for_name(text)
-            if get_graphs(matches) == False:
-                pygame.quit()
-                sys.exit()
+            if not graph_created:
+                matches = DBM.get_matches_for_name(text)
+                print("matches \n", matches)
+                graphs = get_graphs(matches)
+                graph_created = True
+            if show_first:
+                screen.blit(graphs[0][0], graphs[0][1])
+                pygame.display.flip()
+            else:
+                screen.blit(graphs[1][0], graphs[1][1])
+                pygame.display.flip()
 
         pygame.display.update()
 

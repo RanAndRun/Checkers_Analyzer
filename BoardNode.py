@@ -1,6 +1,6 @@
 import copy
 from Board import Board
-from config import board_size
+from config import BOARD_SIZE
 from Enums import Eplayers
 
 
@@ -28,8 +28,8 @@ class BoardNode:
 
     def __repr__(self):
         board_representation = "\n"
-        for y in reversed(range(board_size)):
-            for x in range(board_size):
+        for y in reversed(range(BOARD_SIZE)):
+            for x in range(BOARD_SIZE):
                 piece = self.board.pieces_matrix[y][x]
                 if piece:
                     if piece.color == Eplayers.white:
@@ -40,5 +40,3 @@ class BoardNode:
                     board_representation += ". "
             board_representation += "\n"
         return board_representation + "\n"
-
-

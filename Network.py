@@ -1,12 +1,11 @@
 import socket
 import pickle
 
-DISCONNECT_MSG = "DISCONNECT!"
-BUFFER_SIZE = 2048
+from config import DISCONNECT_MSG, BUFFER_SIZE, SERVER_ADDRESS
 
 
 class Network:
-    def __init__(self, server_address=("10.100.102.33", 12345)):
+    def __init__(self, server_address=SERVER_ADDRESS):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_address = server_address
         self.port = server_address[1]

@@ -18,7 +18,7 @@ class Piece:
         else:
             self.image = pygame.image.load(black_img_path)
 
-        size = (window_size / board_size, window_size / board_size)
+        size = (WINDOW_SIZE / BOARD_SIZE, WINDOW_SIZE / BOARD_SIZE)
         self.image = pygame.transform.scale(self.image, size)
 
     def move(self, to_tile: tuple[int, int]):
@@ -26,11 +26,11 @@ class Piece:
 
     def get_coordinates(self):
         tile_width, tile_height = (
-            window_size / board_size,
-            window_size / board_size,
+            WINDOW_SIZE / BOARD_SIZE,
+            WINDOW_SIZE / BOARD_SIZE,
         )
         x = self.tile[0] * tile_width
-        y = (board_size - 1 - self.tile[1]) * tile_height
+        y = (BOARD_SIZE - 1 - self.tile[1]) * tile_height
 
         return x, y
 
