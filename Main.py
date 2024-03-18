@@ -17,7 +17,6 @@ from config import *
 MOVE_LOCK = threading.Lock()
 
 FPS = 30
-MAX_RETRIES = 3
 FPS_CLOCK = pygame.time.Clock()
 
 RED = (255, 0, 0)
@@ -217,6 +216,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
 
         screen.blit(question_mark, question_mark_rect)
         pygame.display.update()
+        FPS_CLOCK.tick(FPS)
 
 
 def receive_moves_forever(board, network):
@@ -327,6 +327,7 @@ def main():
     show_first = True
 
     while run:
+
         board.draw(screen)
         mouse_clicked = False
 
@@ -525,6 +526,7 @@ def main():
             pygame.display.flip()
 
         if analysis_started:
+
             history = board.get_history()
             if player_color is not None:
                 color = Eplayers.white if player_color else Eplayers.black
@@ -533,6 +535,17 @@ def main():
                 color = Eplayers.white
 
             print("analyzing with player color", color)
+            screen.blit(backround, (0, 0))
+            please_wait_text = font.render("Analyzing... Please wait", True, BLACK)
+            please_wait_text_y = int(WINDOW_SIZE * 0.07)
+            screen.blit(
+                please_wait_text,
+                ((WINDOW_SIZE - please_wait_text.get_width()) // 2, please_wait_text_y),
+            )
+
+            pygame.display.flip()
+            pygame.display.update()
+
             game_analysis, average_score = checkers_ai.analyze_game(history, color)
             print("average score", average_score)
 
@@ -542,12 +555,6 @@ def main():
             elif winner == Eplayers.black:
                 DBM.add_player(text, False if player_color else True, average_score)
 
-            please_wait_text = font.render("Analyzing... Please wait", True, BLACK)
-            please_wait_text_y = int(WINDOW_SIZE * 0.07)
-            screen.blit(
-                please_wait_text,
-                ((WINDOW_SIZE - please_wait_text.get_width()) // 2, please_wait_text_y),
-            )
             display_analysis(screen, game_analysis, history, color)
             analysis_started = False
             showing_graph = True
@@ -566,6 +573,7 @@ def main():
                 pygame.display.flip()
 
         pygame.display.update()
+        FPS_CLOCK.tick(FPS)
 
 
 if __name__ == "__main__":

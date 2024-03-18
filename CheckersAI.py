@@ -52,12 +52,10 @@ class CheckersAI:
             node.value = minEval
             return minEval
 
-    def find_best_move(self, board=None, depth=None, is_max=True):
-        if board is None:
-            board = self.board
-        if depth is None:
-            depth = self.depth
 
+    def find_best_move(self, board):
+
+        is_max = board.current_player == Eplayers.white
         root_node = BoardNode(board)
         best_value = float("-inf") if is_max else float("inf")
         best_move = None
@@ -69,10 +67,10 @@ class CheckersAI:
                 future = executor.submit(
                     self.minimax,
                     child,
-                    depth - 1,
+                    DEPTH - 1,
                     float("-inf"),
                     float("inf"),
-                    not is_max,  # Swap maximizingPlayer if is_max is False
+                    not is_max,  # The next player is the opposite of the current player
                 )
                 futures.append((future, child.move))
 
@@ -92,13 +90,10 @@ class CheckersAI:
 
         # Temporarily apply the played move
         color_of_player = played_move.piece.color
-        is_max = (
-            color_of_player == Eplayers.white
-        )  # If the played move is white, the next move is black, and vice versa
+        is_max = color_of_player == Eplayers.white
+        # If the played move is white, the next move is black, and vice versa
         copy_of_board.apply_move(played_move)
-        print("copy of board \n", copy_of_board)
-        print("secend copy of board \n", secend_copy_of_board)
-        print("root board \n", board)
+
         # Create a BoardNode for the current board state after the move
 
         board_after_move = BoardNode(copy_of_board)
@@ -115,7 +110,7 @@ class CheckersAI:
                 self.depth - 1,
                 float("-inf"),
                 float("inf"),
-                not is_max,  # Swap maximizingPlayer if is_max is False
+                not is_max,
             )
             played_move_score = played_move_score.result()
 
@@ -123,11 +118,7 @@ class CheckersAI:
             best_move = played_move
             best_move_score = played_move_score
         else:
-            best_move, best_move_score = self.find_best_move(board=secend_copy_of_board)
-        print(f"best move {best_move}, score {best_move_score}")
-        print(f"played move {played_move}, score {played_move_score}")
-
-        # FIXME unwanted piece removing from board of killed piece.
+            best_move, best_move_score = self.find_best_move(secend_copy_of_board)
 
         return played_move_score, best_move_score, best_move
 
@@ -142,23 +133,17 @@ class CheckersAI:
             move.piece = board.get_piece_at_tile(move.from_tile)
             if move.killed is not None:
                 move.killed = board.get_piece_at_tile(move.killed.tile)
-            print(move.piece, "move")
+
             # Skip if the move's piece color doesn't match the specified color
-            try:
-                if move.piece.color != color:
-                    print("history color not matching", move.piece.color, color)
-                    continue
-            except AttributeError:
-                print("move", move)
-                print("from tile", move.from_tile)
-                print("piece", move.piece)
-                print("color", move.piece.color)
-                print("color", color)
+            if move.piece.color != color:
+                print("history color not matching", move.piece.color, color)
+                continue
 
             # Perform evaluation and comparison for the move
             played_move_score, best_value, best_move = self.evaluate_and_compare_move(
                 move, board
             )
+
             sum_of_played_move_scores += played_move_score - prev_score
             prev_score = played_move_score
             # Append the results to the analysis_results list

@@ -38,11 +38,15 @@ class Board:
 
         self.whites_turn = path.join("assets", "RedsTurn.png")
         self.whites_turn = pygame.image.load(self.whites_turn)
-        self.whites_turn = pygame.transform.scale(self.whites_turn, self.size)
+        self.whites_turn = pygame.transform.scale(
+            self.whites_turn, (TILE_SIZE, TILE_SIZE)
+        )
 
         self.blacks_turn = path.join("assets", "BlacksTurn.png")
         self.blacks_turn = pygame.image.load(self.blacks_turn)
-        self.blacks_turn = pygame.transform.scale(self.blacks_turn, self.size)
+        self.blacks_turn = pygame.transform.scale(
+            self.blacks_turn, (TILE_SIZE, TILE_SIZE)
+        )
 
     def create_tiles(self):
         tiles = [[None for x in range(BOARD_SIZE)] for y in range(BOARD_SIZE)]
@@ -604,30 +608,20 @@ class Board:
         return self.where_can_jump(tile) != []
 
     def is_player_out_of_moves(self, player_color):
-        """
-        Check if a player has no legal moves left.
-        """
+        # Check if a player has no legal moves left.
+        
         for piece in self.pieces_list[player_color.value - 1]:
             if piece.is_alive() and self.every_move_possible_for_piece(piece):
                 return False  # Found a piece with a legal move
         return True  # No legal moves found
 
     def is_player_out_of_pieces(self, player_color):
-        """
-        Check if a player has no pieces left.
-        """
+        # Check if a player has no pieces left.
         return all(
             not piece.is_alive() for piece in self.pieces_list[player_color.value - 1]
         )
 
     def is_game_over(self):
-        """
-        Check if the game is over and return the game status.
-        Returns:
-            - 'white' if White wins.
-            - 'black' if Black wins.
-            - None if the game is not over.
-        """
         white_out_of_moves = self.is_player_out_of_moves(Eplayers.white)
         black_out_of_moves = self.is_player_out_of_moves(Eplayers.black)
         white_out_of_pieces = self.is_player_out_of_pieces(Eplayers.white)
