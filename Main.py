@@ -95,6 +95,7 @@ def handle_mouse_click(
                 if not hasJumped or not board.has_more_jumps((x, y)):
                     is_white_to_play = not is_white_to_play
                     board.switch_player()
+
                     board.add_move_to_history(before_move)
                     if game_online:
                         simplified_move_node = Board.serialize_move_node(before_move)
@@ -179,7 +180,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     played_move, move_score, best_move_score, best_move = game_analysis[
                         int(move_index / 2)
                     ]
-                    analysis_board.apply_move(played_move)
+                    analysis_board.apply_move(played_move, True)
                     analysis_board.draw(screen)
 
                     if best_move.__eq__(played_move):
@@ -191,7 +192,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     move_to_show = played_move
                 else:
                     best_move = None
-                    analysis_board.apply_move(current_move)
+                    analysis_board.apply_move(current_move, True)
                     analysis_board.draw(screen)
                     display_state = "played_move"
                     move_to_show = current_move
@@ -338,7 +339,6 @@ def main():
                 mouse_x, mouse_y = event.pos
                 mouse_clicked = True
             elif event.type == pygame.KEYDOWN:
-
                 if event.key == pygame.K_BACKSPACE:
                     text = text[:-1]
                 elif event.key == pygame.K_KP_ENTER or event.key == pygame.K_RETURN:
@@ -349,11 +349,7 @@ def main():
                         ask_for_name = True
 
                     elif not analysis_started and not showing_graph:
-                        winner = board.is_game_over()
-                        if winner == Eplayers.white:
-                            DBM.add_player(text, True if player_color else False)
-                        elif winner == Eplayers.black:
-                            DBM.add_player(text, False if player_color else True)
+
                         analysis_started = True
                         ask_for_name = False
 
@@ -365,13 +361,18 @@ def main():
                 elif event.key == pygame.K_g:
                     last_move, last_board = board.get_history()[-1]
                     print(f"last move {last_move}, last board \n {last_board}")
+                    copy_of_board = copy.deepcopy(last_board)
                     last_move_analysis = checkers_ai.evaluate_and_compare_move(
-                        last_move, last_board
+                        last_move, copy_of_board
                     )
                     print(last_move_analysis)
                 elif event.key == pygame.K_s:
+                    print("history", board.get_history())
                     last_move, last_board = board.get_history()[-1]
                     print(f"last move {last_move}, last board \n {last_board}")
+
+                elif event.key == pygame.K_r:
+                    print("main board", board)
                 else:
                     text += event.unicode if ask_for_name else ""
 
@@ -547,6 +548,13 @@ def main():
             print("analyzing with player color", color)
             game_analysis, average_score = checkers_ai.analyze_game(history, color)
             print("average score", average_score)
+
+            winner = board.is_game_over()
+            if winner == Eplayers.white:
+                DBM.add_player(text, True if player_color else False, average_score)
+            elif winner == Eplayers.black:
+                DBM.add_player(text, False if player_color else True, average_score)
+
             display_analysis(screen, game_analysis, history, color)
             analysis_started = False
             showing_graph = True

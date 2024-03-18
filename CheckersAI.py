@@ -96,8 +96,9 @@ class CheckersAI:
             color_of_player == Eplayers.white
         )  # If the played move is white, the next move is black, and vice versa
         copy_of_board.apply_move(played_move)
-        print("copy of board", copy_of_board)
-        print("secend copy of board", secend_copy_of_board)
+        print("copy of board \n", copy_of_board)
+        print("secend copy of board \n", secend_copy_of_board)
+        print("root board \n", board)
         # Create a BoardNode for the current board state after the move
 
         board_after_move = BoardNode(copy_of_board)
@@ -168,21 +169,3 @@ class CheckersAI:
         average_played_move_score = sum_of_played_move_scores / len(history)
         print("results", analysis_results)
         return analysis_results, average_played_move_score
-
-    # def find_move_score(self, move, board):
-    #     color_of_player = move.piece.color
-    #     is_max = color_of_player == Eplayers.white
-    #     board.apply_move(move)
-    #     move_node = BoardNode(board)
-    #     score = self.minimax(
-    #         move_node, self.depth - 1, -float("inf"), float("inf"), is_max
-    #     )
-    #     board.undo_move()
-    #     return score
-
-    # def compare_move(self, move, board):
-    #     is_max = True if move.piece.color == Eplayers.white else False
-    #     best_move, best_value = self.find_best_move(board=board, is_max=is_max)
-    #     played_move_score = self.find_move_score(move, board)
-
-    #     return played_move_score, best_value, best_move

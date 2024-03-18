@@ -494,10 +494,11 @@ class Board:
             # Switch player if no more jumps are available
             return move, None
 
-    def apply_move(self, move_node: MoveNode, has_jumped: Piece = None):
-        if has_jumped is None:
+    def apply_move(self, move_node: MoveNode, board_analyzer=False):
+        if board_analyzer:
             self.add_move_to_history(move_node)
-            self.switch_player()
+        self.switch_player()
+
         while move_node:
             x, y = move_node.from_tile
             move_node.piece = self.pieces_matrix[y][x]
@@ -809,7 +810,9 @@ class Board:
     def add_move_to_history(self, move: MoveNode):
         self.move_history.append(move)
         copy_of_board = copy.deepcopy(self)  # Renamed variable
+        print("COPY OF BOARD BEFORE UNDOING", copy_of_board)
         copy_of_board.undo_move()
+        print("COPY OF BOARD AFTER UNDOING", copy_of_board)
         self.board_history.append(copy_of_board)
 
     def get_history(self):
