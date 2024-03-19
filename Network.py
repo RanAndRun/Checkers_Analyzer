@@ -1,5 +1,4 @@
 import socket
-import pickle
 
 from config import DISCONNECT_MSG, BUFFER_SIZE, SERVER_ADDRESS
 
@@ -16,9 +15,8 @@ class Network:
         if self.id is None:  # Check if already connected
             try:
                 self.client.connect(self.addr)
-                self.id = pickle.loads(
-                    self.client.recv(BUFFER_SIZE)
-                )  # Deserialize the received data
+                # Receive and directly use the ID as a string
+                self.id = self.client.recv(BUFFER_SIZE).decode()
             except Exception as e:
                 print(e)
         return self.id
@@ -26,21 +24,21 @@ class Network:
     def send(self, data):
         try:
             if self.id is not None:
-                self.client.send(pickle.dumps(data))
+                # Convert data to string and encode
+                self.client.send(str(data).encode())
         except socket.error as e:
-            print("problem sendoing data", e)
+            print("Problem sending data:", e)
 
     def receive(self):
         try:
             if self.id is not None:
-                msg = pickle.loads(self.client.recv(BUFFER_SIZE))
+                msg = self.client.recv(BUFFER_SIZE).decode()
                 if msg == DISCONNECT_MSG:
                     self.client.close()
                     self.id = None
                 return msg
         except socket.error as e:
-            # TODO handle this exception
-            print("problem receinving data: ", e)
+            print("Problem receiving data:", e)
 
     def close(self):
         if self.id is not None:

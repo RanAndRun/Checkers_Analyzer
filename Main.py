@@ -229,9 +229,10 @@ def receive_moves_forever(board, network):
                 if msg == DISCONNECT_MSG:
                     print("Opponent has disconnected.")
                     break
+                print(f"Received move: {msg}")
                 move = board.unserialize_move_node(msg)
                 print(f"Received move: {msg}")
-                board.apply_move(move)
+                board.apply_move(move, True)
                 with MOVE_LOCK:  # Ensure thread-safe access to is_white_to_play
                     is_white_to_play = not is_white_to_play
                 pygame.display.update()
@@ -304,7 +305,7 @@ def main():
     second_selection = None
 
     if GAME_ONLINE:
-        player_color = network.connect()
+        player_color = True if network.connect() == "True" else False
 
     hasJumped = None
     run = True

@@ -16,12 +16,21 @@ class Board:
     size = (WINDOW_SIZE, WINDOW_SIZE)
     board_image = pygame.transform.scale(board_image, size)
 
+    current_player = Eplayers.white
+
     pieces_list = [[], []]
-    get_pawn_from_tile = {}
     tiles = []
     move_history = []
     board_history = []
     pieces_matrix = [[], []]
+
+    whites_turn = path.join("assets", "RedsTurn.png")
+    whites_turn = pygame.image.load(whites_turn)
+    whites_turn = pygame.transform.scale(whites_turn, (TILE_SIZE, TILE_SIZE))
+
+    blacks_turn = path.join("assets", "BlacksTurn.png")
+    blacks_turn = pygame.image.load(blacks_turn)
+    blacks_turn = pygame.transform.scale(blacks_turn, (TILE_SIZE, TILE_SIZE))
 
     # Board Initialization and Setup
 
@@ -33,20 +42,6 @@ class Board:
         ]
         self.tiles = self.create_tiles()
         self.starting_position()
-        self.move_history = []
-        self.current_player = Eplayers.white
-
-        self.whites_turn = path.join("assets", "RedsTurn.png")
-        self.whites_turn = pygame.image.load(self.whites_turn)
-        self.whites_turn = pygame.transform.scale(
-            self.whites_turn, (TILE_SIZE, TILE_SIZE)
-        )
-
-        self.blacks_turn = path.join("assets", "BlacksTurn.png")
-        self.blacks_turn = pygame.image.load(self.blacks_turn)
-        self.blacks_turn = pygame.transform.scale(
-            self.blacks_turn, (TILE_SIZE, TILE_SIZE)
-        )
 
     def create_tiles(self):
         tiles = [[None for x in range(BOARD_SIZE)] for y in range(BOARD_SIZE)]
@@ -609,7 +604,7 @@ class Board:
 
     def is_player_out_of_moves(self, player_color):
         # Check if a player has no legal moves left.
-        
+
         for piece in self.pieces_list[player_color.value - 1]:
             if piece.is_alive() and self.every_move_possible_for_piece(piece):
                 return False  # Found a piece with a legal move
@@ -822,37 +817,60 @@ class Board:
 
     @staticmethod
     def serialize_move_node(move_node):
-        serialized = {
-            "piece": [
-                "king" if isinstance(move_node.piece, King) else "pawn",
-                move_node.piece.color,
-            ],
-            "from_tile": move_node.from_tile,
-            "to_tile": move_node.to_tile,
-            "killed": move_node.killed.tile if move_node.killed else None,
-            "promoted": move_node.promoted,
-            "children": [
-                Board.serialize_move_node(child) for child in move_node.children
-            ],
-            "parent": None,
-        }
+        piece_type = "king" if isinstance(move_node.piece, King) else "pawn"
+        piece_color = move_node.piece.color
+        from_tile = (
+            f"({move_node.from_tile[0]},{move_node.from_tile[1]})"  # Tuple to string
+        )
+        to_tile = f"({move_node.to_tile[0]},{move_node.to_tile[1]})"
+        killed = str(move_node.killed.tile) if move_node.killed else "None"
+        promoted = str(move_node.promoted)
+        children = ";".join(
+            [Board.serialize_move_node(child) for child in move_node.children]
+        )
+
+        serialized = f"{piece_type}${piece_color}${from_tile}${to_tile}${killed}${promoted}${children}"
+        print(serialized)
         return serialized
 
     def unserialize_move_node(self, serialized):
-        piece_type, color = serialized["piece"]
-        piece = King((0, 0), color) if piece_type == "king" else Pawn((0, 0), color)
-        piece.tile = serialized["from_tile"]
+        elements = serialized.split("$", 6)
+        (
+            piece_type,
+            color,
+            from_tile_str,
+            to_tile_str,
+            killed_tile_str,
+            promoted_str,
+            children_str,
+        ) = elements
+
+        print("elements", elements)
+
+        piece = (
+            King(eval(from_tile_str), color)
+            if piece_type == "king"
+            else Pawn(eval(from_tile_str), color)
+        )
+
         killed = (
-            self.get_piece_at_tile(serialized["killed"])
-            if serialized["killed"]
+            self.get_piece_at_tile(eval(killed_tile_str))
+            if killed_tile_str != "None"
             else None
         )
+        children = [
+            self.unserialize_move_node(child_str)
+            for child_str in children_str.split(";")
+            if child_str
+        ]
+
         move_node = MoveNode(
             piece,
-            serialized["from_tile"],
-            serialized["to_tile"],
+            eval(from_tile_str),
+            eval(to_tile_str),
             killed,
-            serialized["promoted"],
-            [self.unserialize_move_node(child) for child in serialized["children"]],
+            eval(promoted_str),
+            children,
         )
+
         return move_node

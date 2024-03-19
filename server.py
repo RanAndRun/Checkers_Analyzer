@@ -1,6 +1,4 @@
 import socket
-import pickle
-
 
 DISCONNECT_MSG = "DISCONNECT!"
 BUFFER_SIZE = 2048
@@ -17,31 +15,31 @@ def start_server():
     white_player_socket, white_player_address = server_socket.accept()
     print("White player connected:", white_player_address)
 
-    white_player_socket.send(pickle.dumps(True))
+    # Sending color information as string
+    white_player_socket.send("True".encode())
 
     black_player_socket, black_player_address = server_socket.accept()
     print("Black player connected:", black_player_address)
 
-    black_player_socket.send(pickle.dumps(False))
-
-    # Send initial color information to both players
+    # Sending color information as string
+    black_player_socket.send("False".encode())
 
     connected = True
     while connected:
         try:
-            msg = pickle.loads(white_player_socket.recv(BUFFER_SIZE))
+            msg = white_player_socket.recv(BUFFER_SIZE).decode()
             print(f"[{white_player_address}]: {msg}")
-
-            black_player_socket.send(pickle.dumps(msg))
+            print(msg)
+            black_player_socket.send(msg.encode())
 
             if msg == DISCONNECT_MSG:
                 connected = False
                 break
 
-            msg = pickle.loads(black_player_socket.recv(BUFFER_SIZE))
+            msg = black_player_socket.recv(BUFFER_SIZE).decode()
             print(f"[{black_player_address}]: {msg}")
 
-            white_player_socket.send(pickle.dumps(msg))
+            white_player_socket.send(msg.encode())
 
             if msg == DISCONNECT_MSG:
                 connected = False
