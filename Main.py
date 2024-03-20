@@ -1,15 +1,14 @@
 import pygame, sys
-from Board import *
-from time import sleep
-from Enums import Eplayers, Ecolors
-from BoardNode import BoardNode
-from Network import Network
-import threading
-from DBManager import DBManager
 import os
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import io
+import threading
+
+from Board import Board
+from DBManager import DBManager
+from Enums import Eplayers, Ecolors
+from Network import Network
 from CheckersAI import CheckersAI
 from config import *
 
@@ -51,7 +50,7 @@ backround = pygame.transform.scale(backround, SIZE)
 
 def handle_mouse_click(
     board: Board,
-    clicked_tile: Tile,
+    clicked_tile,
     first_selection,
     is_white_to_play,
     hasJumped,
@@ -253,7 +252,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
 
                 is_played_move_best_move = False
 
-                if current_move.piece.color == analysis_color:
+                if current_move.get_piece().get_color() == analysis_color:
                     played_move, move_score, best_move_score, best_move = game_analysis[
                         int(move_index / 2)
                     ]
@@ -384,7 +383,6 @@ def main():
 
     receive_thread = None
     first_selection = None
-    second_selection = None
 
     if GAME_ONLINE:
         player_color = True if network.connect() == "True" else False
@@ -471,15 +469,15 @@ def main():
                     0
                 ].get_from_tile()
                 last_move_to_tile_x, last_move_to_tile_y = last_move[0].get_to_tile()
-                board.get_tile(last_move_from_tile_x, last_move_from_tile_y).glow(
-                    screen, Ecolors.green
-                )
-                board.get_tile(last_move_to_tile_x, last_move_to_tile_y).glow(
-                    screen, Ecolors.green
-                )
+                board.get_tile_from_location(
+                    last_move_from_tile_x, last_move_from_tile_y
+                ).glow(screen, Ecolors.green)
+                board.get_tile_from_location(
+                    last_move_to_tile_x, last_move_to_tile_y
+                ).glow(screen, Ecolors.green)
             if mouse_on_tile:
                 x, y = mouse_on_tile.get_location()
-                mouse_on_pawn = board.get_piece(x, y)
+                mouse_on_pawn = board.get_piece_at_tile((x, y))
                 if mouse_on_pawn and mouse_on_pawn.get_color() == (
                     Eplayers.white if is_white_to_play else Eplayers.black
                 ):
@@ -524,7 +522,7 @@ def main():
                 if first_selection:
                     board.show_available_moves(first_selection, hasJumped, screen)
                     x, y = first_selection
-                    board.get_tile(x, y).glow(screen, Ecolors.blue)
+                    board.get_tile_from_location(x, y).glow(screen, Ecolors.blue)
 
         if not GAME_ONLINE:
             if len(board.get_history()) > 0:

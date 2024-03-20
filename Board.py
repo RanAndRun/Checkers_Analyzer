@@ -16,8 +16,6 @@ class Board:
     size = (WINDOW_SIZE, WINDOW_SIZE)
     board_image = pygame.transform.scale(board_image, size)
 
-    current_player = Eplayers.white
-    winner = None
     whites_turn = path.join("assets", "RedsTurn.png")
     whites_turn = pygame.image.load(whites_turn)
     whites_turn = pygame.transform.scale(whites_turn, (TILE_SIZE, TILE_SIZE))
@@ -34,6 +32,7 @@ class Board:
         self.pieces_matrix = [
             [None for x in range(BOARD_SIZE)] for y in range(BOARD_SIZE)
         ]
+        self.current_player = Eplayers.white
         self.winner = None
         self.pieces_list = [[], []]
         self.tiles = []
@@ -43,6 +42,8 @@ class Board:
         self.starting_position()
 
     def create_tiles(self):
+        # create tiles when the board initialze
+
         tiles = [[None for x in range(BOARD_SIZE)] for y in range(BOARD_SIZE)]
 
         x_point = 0
@@ -58,6 +59,7 @@ class Board:
         return tiles
 
     def starting_position(self):
+        # set up the starting position of the pieces
         for row in range(3):
             mod = row % 2
             for column in range(0 + mod, BOARD_SIZE - 1 + mod, 2):
@@ -73,6 +75,7 @@ class Board:
                 self.pieces_list[1].append(curr)
 
     def __deepcopy__(self, memo):
+        # Deep copy the board and its attributes
         new_board = self.__class__.__new__(self.__class__)
         memo[id(self)] = new_board
 
@@ -105,6 +108,8 @@ class Board:
     # Drawing and Display
 
     def draw(self, screen):
+        # Draw the board and all pieces
+
         screen.blit(self.board_image, (0, 0))
         if self.current_player == Eplayers.white:
             screen.blit(
@@ -123,6 +128,7 @@ class Board:
                     self.pieces_matrix[tile_y][tile_x].draw(screen)
 
     def show_better_move(self, move: MoveNode, screen):
+        # draw on the board the move got in parameter
         if move is None:
             return
 
