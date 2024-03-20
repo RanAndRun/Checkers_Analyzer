@@ -230,11 +230,12 @@ def receive_moves_forever(board, network):
             if msg:
                 if msg == DISCONNECT_MSG:
                     print("Opponent has disconnected.")
+                    if board.is_game_over() is None:
+                        board.resign(not player_color)
                     game_over = True
+
                     break
-                print(f"Received move: {msg}")
                 move = board.unserialize_move_node(msg)
-                print(f"Received move: {msg}")
                 board.apply_move(move, True)
                 with MOVE_LOCK:  # Ensure thread-safe access to is_white_to_play
                     is_white_to_play = not is_white_to_play
@@ -369,6 +370,7 @@ def main():
                     show_first = False
                 elif event.key == pygame.K_r and not ask_for_name and not showing_graph:
                     board.resign(player_color)
+                    network.close()
                     game_over = True
                     ask_for_name = True
                 else:

@@ -125,16 +125,18 @@ class CheckersAI:
         prev_score = 0
         sum_of_played_move_scores = 0
 
+        length = len(history)
+        index = 0
         # Iterate over each move and corresponding board state
         for move, board in history:
-
+            print("move", index, "of", length)
+            index += 1
             move.piece = board.get_piece_at_tile(move.from_tile)
             if move.killed is not None:
                 move.killed = board.get_piece_at_tile(move.killed.tile)
 
             # Skip if the move's piece color doesn't match the specified color
             if move.piece.color != color:
-                print("history color not matching", move.piece.color, color)
                 continue
 
             # Perform evaluation and comparison for the move

@@ -625,7 +625,6 @@ class Board:
         else:
             self.winner = None
 
-        print("winner is", self.winner)
         return self.winner
 
     def resign(self, player):
@@ -795,9 +794,7 @@ class Board:
 
     def add_move_to_history(self, move: MoveNode):
         self.move_history.append(move)
-        print("copying board")
         copy_of_board = copy.deepcopy(self)  # Renamed variable
-        print("copied board")
         copy_of_board.undo_move()
         self.board_history.append(copy_of_board)
 
@@ -846,7 +843,6 @@ class Board:
         )
 
         serialized = f"{piece_type}${piece_color}${from_tile}${to_tile}${killed}${promoted}${children}"
-        print(serialized)
         return serialized
 
     def unserialize_move_node(self, serialized):
@@ -860,8 +856,6 @@ class Board:
             promoted_str,
             children_str,
         ) = elements
-
-        print("elements", elements)
 
         piece = (
             King(eval(from_tile_str), color)
