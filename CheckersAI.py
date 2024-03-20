@@ -25,7 +25,6 @@ class CheckersAI:
     def minimax(self, node, depth, alpha, beta, maximizingPlayer):
         # input: BoardNode of the current board state, depth of the search tree, alpha, beta, and a boolean indicating if the current player is maximizing score or not
         # output: the score of the best move for the current player
-        print(node.board)
         if depth == 0 or node.board.is_game_over():
             return self.evaluate_board(node.board)
 

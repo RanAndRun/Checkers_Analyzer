@@ -18,12 +18,6 @@ class Board:
 
     current_player = Eplayers.white
 
-    pieces_list = [[], []]
-    tiles = []
-    move_history = []
-    board_history = []
-    pieces_matrix = [[], []]
-
     whites_turn = path.join("assets", "RedsTurn.png")
     whites_turn = pygame.image.load(whites_turn)
     whites_turn = pygame.transform.scale(whites_turn, (TILE_SIZE, TILE_SIZE))
@@ -40,6 +34,10 @@ class Board:
         self.pieces_matrix = [
             [None for x in range(BOARD_SIZE)] for y in range(BOARD_SIZE)
         ]
+        self.pieces_list = [[], []]
+        self.tiles = []
+        self.move_history = []
+        self.board_history = []
         self.tiles = self.create_tiles()
         self.starting_position()
 
@@ -59,11 +57,6 @@ class Board:
         return tiles
 
     def starting_position(self):
-        self.get_pawn_from_tile = {}
-        for row in self.tiles:
-            for tile in row:
-                self.get_pawn_from_tile[tile] = None
-
         for row in range(3):
             mod = row % 2
             for column in range(0 + mod, BOARD_SIZE - 1 + mod, 2):
@@ -496,6 +489,7 @@ class Board:
             if move_node.killed:
                 x, y = move_node.killed.tile
                 move_node.killed = self.pieces_matrix[y][x]
+
             self._execute_move(move_node)
 
             if move_node.children != []:
