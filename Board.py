@@ -17,7 +17,7 @@ class Board:
     board_image = pygame.transform.scale(board_image, size)
 
     current_player = Eplayers.white
-
+    winner = None
     whites_turn = path.join("assets", "RedsTurn.png")
     whites_turn = pygame.image.load(whites_turn)
     whites_turn = pygame.transform.scale(whites_turn, (TILE_SIZE, TILE_SIZE))
@@ -34,6 +34,7 @@ class Board:
         self.pieces_matrix = [
             [None for x in range(BOARD_SIZE)] for y in range(BOARD_SIZE)
         ]
+        self.winner = None
         self.pieces_list = [[], []]
         self.tiles = []
         self.move_history = []
@@ -476,8 +477,8 @@ class Board:
             # Switch player if no more jumps are available
             return move, None
 
-    def apply_move(self, move_node: MoveNode, board_analyzer=False):
-        if board_analyzer:
+    def apply_move(self, move_node: MoveNode, add_to_history=False):
+        if add_to_history:
             self.add_move_to_history(move_node)
 
         self.switch_player()
@@ -607,12 +608,31 @@ class Board:
         white_out_of_pieces = self.is_player_out_of_pieces(Eplayers.white)
         black_out_of_pieces = self.is_player_out_of_pieces(Eplayers.black)
 
+        # Check for win conditions first
         if white_out_of_pieces or white_out_of_moves:
-            return Eplayers.black  # Black wins
+            self.winner = Eplayers.black  # Black wins
         elif black_out_of_pieces or black_out_of_moves:
-            return Eplayers.white  # White wins
+            self.winner = Eplayers.white  # White wins
+        # Then check for draw
+        elif (
+            not white_out_of_pieces
+            and not black_out_of_pieces
+            and white_out_of_moves
+            and black_out_of_moves
+        ):
+            self.winner = "draw"  # Game is a draw
+        # If none of the above, the game is still ongoing
         else:
-            return None  # Game is not over
+            self.winner = None
+
+        print("winner is", self.winner)
+        return self.winner
+
+    def resign(self, player):
+        if player == Eplayers.white:
+            self.winner = Eplayers.black
+        else:
+            self.winner = Eplayers.white
 
     # Piece Management
 

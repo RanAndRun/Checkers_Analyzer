@@ -367,6 +367,10 @@ def main():
                     show_first = True
                 elif event.key == pygame.K_LEFT:
                     show_first = False
+                elif event.key == pygame.K_r and not ask_for_name and not showing_graph:
+                    board.resign(player_color)
+                    game_over = True
+                    ask_for_name = True
                 else:
                     text += event.unicode if ask_for_name else ""
 
@@ -560,6 +564,8 @@ def main():
                 DBM.add_player(text, True if player_color else False, average_score)
             elif winner == Eplayers.black:
                 DBM.add_player(text, False if player_color else True, average_score)
+            elif winner == "draw":
+                DBM.add_player(text, None, average_score)
 
             display_analysis(screen, game_analysis, history, color)
             analysis_started = False
