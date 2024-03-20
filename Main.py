@@ -60,9 +60,9 @@ def handle_mouse_click(
     x, y = clicked_tile.get_location()
     if first_selection is None:
         # Select a piece if it belongs to the current player
-        if board.pieces_matrix[y][x] and board.pieces_matrix[y][x].color == (
-            Eplayers.white if is_white_to_play else Eplayers.black
-        ):
+        if board.get_piece_at_tile((x, y)) and board.get_piece_at_tile(
+            (x, y)
+        ).get_color() == (Eplayers.white if is_white_to_play else Eplayers.black):
             first_selection = (x, y)
     else:
         # Attempt to move the selected piece
@@ -75,7 +75,7 @@ def handle_mouse_click(
             possible_moves = jumps_possible if jumps_possible else moves_possible
 
             for move in possible_moves:
-                if move.to_tile == (x, y):
+                if move.get_to_tile() == (x, y):
                     move_exists = True
                     break
 
@@ -84,8 +84,8 @@ def handle_mouse_click(
 
                 if before_move:
                     last_node = before_move
-                    while last_node.children:
-                        last_node = last_node.children[
+                    while last_node.get_children():
+                        last_node = last_node.get_children()[
                             0
                         ]  # Get to the end of the sequence
                     last_node.add_child(move)  # Append the new move to the sequence
@@ -176,6 +176,83 @@ def display_analysis(screen, game_analysis, history, analysis_color):
 
                 is_played_move_best_move = False
 
+                if current_move.get_piece().get_color() == analysis_color:
+                    played_move, move_score, best_move_score, best_move = game_analysis[
+                        int(move_index / 2)
+                    ]
+                    analysis_board.apply_move(played_move, True)
+                    analysis_board.draw(screen)
+
+                    if best_move.__eq__(played_move):
+                        is_played_move_best_move = True
+
+                    best_move = best_move
+                    display_state = "best_move"
+
+                    move_to_show = played_move
+                else:
+                    best_move = None
+                    analysis_board.apply_move(current_move, True)
+                    analysis_board.draw(screen)
+                    display_state = "played_move"
+                    move_to_show = current_move
+
+        if show_explanation:
+            screen.blit(explain, (0, 0))
+        else:
+            if move_to_show:
+                analysis_board.show_move_made(
+                    move_to_show,
+                    screen,
+                    current_move.get_piece().get_color() == analysis_color,
+                    is_played_move_best_move,
+                )
+            if is_played_move_best_move:
+                # show the played move in yellow
+                analysis_board.show_move_made(
+                    current_move, screen, True, is_played_move_best_move
+                )
+            elif best_move is not None:
+                analysis_board.show_better_move(best_move, screen)
+
+        screen.blit(question_mark, question_mark_rect)
+        pygame.display.update()
+        FPS_CLOCK.tick(FPS)
+
+    running = True
+    analysis_board = Board(screen)  # Assuming this is your custom Board class
+    move_index = -1
+    mouse_clicked, mouse_x, mouse_y, show_explanation = False, 0, 0, False
+
+    question_mark_rect = question_mark.get_rect()
+
+    display_state = "start"  # Can be 'start', 'played_move', 'best_move'
+
+    screen.fill((255, 255, 255))
+    analysis_board.draw(screen)
+
+    screen.blit(question_mark, question_mark_rect)
+    pygame.display.update()
+
+    move_to_show = None
+    is_played_move_best_move = False
+    best_move = None
+
+    while running:
+        screen.fill((255, 255, 255))
+        analysis_board.draw(screen)
+        if not handle_key_events():
+            break
+
+        if move_index == -1:
+            analysis_board.draw(screen)
+        elif 0 <= move_index < len(history):
+            current_move, _ = history[move_index]
+
+            if display_state == "start":
+
+                is_played_move_best_move = False
+
                 if current_move.piece.color == analysis_color:
                     played_move, move_score, best_move_score, best_move = game_analysis[
                         int(move_index / 2)
@@ -204,7 +281,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                 analysis_board.show_move_made(
                     move_to_show,
                     screen,
-                    current_move.piece.color == analysis_color,
+                    current_move.get_piece().get_color() == analysis_color,
                     is_played_move_best_move,
                 )
             if is_played_move_best_move:
@@ -390,27 +467,29 @@ def main():
         if GAME_ONLINE and is_white_to_play == player_color:
             if len(board.get_history()) > 0:
                 last_move = board.get_history()[-1]
-                last_move_from_tile_x, last_move_from_tile_y = last_move[0].from_tile
-                last_move_to_tile_x, last_move_to_tile_y = last_move[0].to_tile
-                board.tiles[last_move_from_tile_y][last_move_from_tile_x].glow(
+                last_move_from_tile_x, last_move_from_tile_y = last_move[
+                    0
+                ].get_from_tile()
+                last_move_to_tile_x, last_move_to_tile_y = last_move[0].get_to_tile()
+                board.get_tile(last_move_from_tile_x, last_move_from_tile_y).glow(
                     screen, Ecolors.green
                 )
-                board.tiles[last_move_to_tile_y][last_move_to_tile_x].glow(
+                board.get_tile(last_move_to_tile_x, last_move_to_tile_y).glow(
                     screen, Ecolors.green
                 )
             if mouse_on_tile:
                 x, y = mouse_on_tile.get_location()
-                mouse_on_pawn = board.pieces_matrix[y][x]
-                if mouse_on_pawn and mouse_on_pawn.color == (
+                mouse_on_pawn = board.get_piece(x, y)
+                if mouse_on_pawn and mouse_on_pawn.get_color() == (
                     Eplayers.white if is_white_to_play else Eplayers.black
                 ):
-                    board.show_avilable_moves(
+                    board.show_available_moves(
                         mouse_on_tile.get_location(), hasJumped, screen
                     )
                 if (
                     mouse_clicked
                     and mouse_on_pawn
-                    and mouse_on_pawn.color
+                    and mouse_on_pawn.get_color()
                     == (Eplayers.white if is_white_to_play else Eplayers.black)
                 ):
                     (
@@ -442,35 +521,37 @@ def main():
                         before_move,
                     )
 
-            if first_selection:
-                board.show_avilable_moves(first_selection, hasJumped, screen)
-                x, y = first_selection
-                board.tiles[y][x].glow(screen, Ecolors.blue)
+                if first_selection:
+                    board.show_available_moves(first_selection, hasJumped, screen)
+                    x, y = first_selection
+                    board.get_tile(x, y).glow(screen, Ecolors.blue)
 
         if not GAME_ONLINE:
             if len(board.get_history()) > 0:
                 last_move = board.get_history()[-1]
-                last_move_from_tile_x, last_move_from_tile_y = last_move[0].from_tile
-                last_move_to_tile_x, last_move_to_tile_y = last_move[0].to_tile
-                board.tiles[last_move_from_tile_y][last_move_from_tile_x].glow(
-                    screen, Ecolors.green
-                )
-                board.tiles[last_move_to_tile_y][last_move_to_tile_x].glow(
-                    screen, Ecolors.green
-                )
+                last_move_from_tile_x, last_move_from_tile_y = last_move[
+                    0
+                ].get_from_tile()
+                last_move_to_tile_x, last_move_to_tile_y = last_move[0].get_to_tile()
+                board.get_tile_from_location(
+                    last_move_from_tile_x, last_move_from_tile_y
+                ).glow(screen, Ecolors.green)
+                board.get_tile_from_location(
+                    last_move_to_tile_x, last_move_to_tile_y
+                ).glow(screen, Ecolors.green)
             if mouse_on_tile:
                 x, y = mouse_on_tile.get_location()
-                mouse_on_pawn = board.pieces_matrix[y][x]
-                if mouse_on_pawn and mouse_on_pawn.color == (
+                mouse_on_pawn = board.get_piece_at_tile((x, y))
+                if mouse_on_pawn and mouse_on_pawn.get_color() == (
                     Eplayers.white if is_white_to_play else Eplayers.black
                 ):
-                    board.show_avilable_moves(
+                    board.show_available_moves(
                         mouse_on_tile.get_location(), hasJumped, screen
                     )
                 if (
                     mouse_clicked
                     and mouse_on_pawn
-                    and mouse_on_pawn.color
+                    and mouse_on_pawn.get_color()
                     == (Eplayers.white if is_white_to_play else Eplayers.black)
                 ):
                     (
@@ -502,10 +583,10 @@ def main():
                         before_move,
                     )
 
-            if first_selection:
-                board.show_avilable_moves(first_selection, hasJumped, screen)
-                x, y = first_selection
-                board.tiles[y][x].glow(screen, Ecolors.blue)
+                if first_selection:
+                    board.show_available_moves(first_selection, hasJumped, screen)
+                    x, y = first_selection
+                    board.get_tile_from_location(x, y).glow(screen, Ecolors.blue)
         # Assuming you have a lock defined somewhere in your code
 
         if ask_for_name:

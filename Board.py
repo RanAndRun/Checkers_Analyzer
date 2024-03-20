@@ -163,7 +163,7 @@ class Board:
             # Move to the next move in the sequence, if it exists
             move = move.children[0] if move.children else None
 
-    def show_avilable_moves(self, from_tile: tuple, has_jumped: Piece, screen):
+    def show_available_moves(self, from_tile: tuple, has_jumped: Piece, screen):
         x, y = from_tile
         possible_moves, possible_jumps = self.every_move_possible_for_piece(
             self.pieces_matrix[y][x], has_jumped
@@ -194,7 +194,7 @@ class Board:
         x, y = tile
         possible_tiles = []
 
-        if isinstance(piece, Pawn) and piece.alive:
+        if isinstance(piece, Pawn) and piece.is_alive():
             directions = (
                 [(1, 1), (-1, 1)],
                 [(1, -1), (-1, -1)],
@@ -210,7 +210,9 @@ class Board:
                 ) and not self.is_tile_taken(new_x, new_y):
                     promoted = self.can_get_promoted(piece, (new_x, new_y))
                     possible_tiles.append(
-                        MoveNode(piece, piece.tile, (new_x, new_y), promoted=promoted)
+                        MoveNode(
+                            piece, piece.get_tile(), (new_x, new_y), promoted=promoted
+                        )
                     )
 
         if isinstance(piece, King) and piece.alive:
@@ -297,11 +299,13 @@ class Board:
 
                     if not self.is_location_inside_board(
                         new_x, new_y
-                    ) or self.is_a_color_pawn_on_tile(new_x, new_y, piece.color):
+                    ) or self.is_a_color_pawn_on_tile(new_x, new_y, piece.get_color()):
                         break
                     if (
                         self.is_tile_taken(new_x, new_y)
-                        and self.is_opponent_pawn_on_tile(new_x, new_y, piece.color)
+                        and self.is_opponent_pawn_on_tile(
+                            new_x, new_y, piece.get_color()
+                        )
                         or found
                         and not self.is_tile_taken(new_x, new_y)
                     ):
@@ -314,7 +318,7 @@ class Board:
                             possible_jumps.append(
                                 MoveNode(
                                     piece,
-                                    piece.tile,
+                                    piece.get_tile(),
                                     ((new_x + dx), (new_y + dy)),
                                     found,
                                 )
@@ -326,8 +330,8 @@ class Board:
 
     def every_move_possible_for_piece(self, piece: Piece, hasJumped: Piece = None):
         # Get both possible moves and jumps for the piece
-        possible_moves = self.where_can_move(piece.tile)
-        possible_jumps = self.where_can_jump(piece.tile)
+        possible_moves = self.where_can_move(piece.get_tile())
+        possible_jumps = self.where_can_jump(piece.get_tile())
 
         jump_is_possible = self.jump_is_possible(piece.color)
 
@@ -359,7 +363,7 @@ class Board:
         # Check all pieces for jump moves
         for piece in self.pieces_list[color.value - 1]:
             if piece.is_alive():
-                jump_options = self.where_can_jump(piece.tile)
+                jump_options = self.where_can_jump(piece.get_tile())
                 if jump_options:
                     found_jump = True
                     for jump_move in jump_options:
@@ -368,29 +372,32 @@ class Board:
                         temp_board.apply_move(jump_move)
 
                         if (
-                            piece.color == Eplayers.white
-                            and jump_move.to_tile[1] == BOARD_SIZE - 1
+                            piece.get_color() == Eplayers.white
+                            and jump_move.get_to_tile()[1] == BOARD_SIZE - 1
                         ) or (
-                            piece.color == Eplayers.black and jump_move.to_tile[1] == 0
+                            piece.get_color() == Eplayers.black
+                            and jump_move.get_to_tile()[1] == 0
                         ):
                             promoted = True
 
                         new_node = MoveNode(
                             piece,
-                            piece.tile,
-                            jump_move.to_tile,
-                            jump_move.killed,
+                            piece.get_tile(),
+                            jump_move.get_to_tile(),
+                            jump_move.get_killed(),
                             promoted=promoted,
                         )
                         promoted = False
 
                         # Recursively check for further jumps on the temporary board
-                        if temp_board.has_more_jumps(jump_move.to_tile):
-                            new_node.children = temp_board.every_move_for_player(
-                                color, piece, depth + 1, max_depth
+                        if temp_board.has_more_jumps(jump_move.get_to_tile()):
+                            new_node.set_children(
+                                temp_board.every_move_for_player(
+                                    color, piece, depth + 1, max_depth
+                                )
                             )
                         else:
-                            new_node.children = []
+                            new_node.set_children([])
 
                         jump_moves.append(new_node)
 
@@ -406,17 +413,20 @@ class Board:
         promoted = False
         for piece in self.pieces_list[color.value - 1]:
             if piece.is_alive():
-                regular_options = self.where_can_move(piece.tile)
+                regular_options = self.where_can_move(piece.get_tile())
                 for move in regular_options:
                     if (
-                        piece.color == Eplayers.white
-                        and move.to_tile[1] == BOARD_SIZE - 1
-                    ) or (piece.color == Eplayers.black and move.to_tile[1] == 0):
+                        piece.get_color() == Eplayers.white
+                        and move.get_to_tile()[1] == BOARD_SIZE - 1
+                    ) or (
+                        piece.get_color() == Eplayers.black
+                        and move.get_to_tile()[1] == 0
+                    ):
                         promoted = True
                     new_node = MoveNode(
                         piece,
-                        piece.tile,
-                        move.to_tile,
+                        piece.get_tile(),
+                        move.get_to_tile(),
                         None,
                         promoted=promoted,
                     )
@@ -426,7 +436,7 @@ class Board:
 
     def move(self, from_tile: tuple, to_tile: tuple, hasJumped: bool, screen):
         x, y = from_tile
-        piece = self.pieces_matrix[y][x]
+        piece = self.get_piece_at_tile(from_tile)
         regular_moves, jump_moves = self.every_move_possible_for_piece(piece, hasJumped)
         possible_moves = jump_moves if jump_moves else regular_moves
 
@@ -434,7 +444,7 @@ class Board:
         was_promoted = False
 
         for possible_move in possible_moves:
-            if possible_move.to_tile == to_tile:
+            if possible_move.get_to_tile() == to_tile:
 
                 if piece:
                     piece.move(to_tile)
@@ -444,20 +454,23 @@ class Board:
                     self.pieces_matrix[from_tile_y][from_tile_x] = None
                     self.pieces_matrix[to_tile_y][to_tile_x].draw(screen)
 
-                    if possible_move.killed and possible_move.killed.tile:
+                    if (
+                        possible_move.get_killed()
+                        and possible_move.get_killed().get_tile()
+                    ):
                         hasJumped = piece
-                        killed_x, killed_y = possible_move.killed.tile
+                        killed_x, killed_y = possible_move.get_killed().get_tile()
                         self.pieces_matrix[killed_y][killed_x] = None
-                        possible_move.killed.killed()
-                        self.pieces_list[possible_move.killed.color.value - 1].remove(
-                            possible_move.killed
-                        )
+                        possible_move.get_killed().killed()
+                        self.pieces_list[
+                            possible_move.get_killed().get_color().value - 1
+                        ].remove(possible_move.get_killed())
 
                     if isinstance(piece, Pawn):
                         if (
-                            piece.color == Eplayers.white
+                            piece.get_color() == Eplayers.white
                             and to_tile[1] == BOARD_SIZE - 1
-                        ) or (piece.color == Eplayers.black and to_tile[1] == 0):
+                        ) or (piece.get_color() == Eplayers.black and to_tile[1] == 0):
                             was_promoted = True
                             self.upgrade_to_king(to_tile)
                             piece = self.get_piece_at_tile(
@@ -466,7 +479,7 @@ class Board:
                             hasJumped = None
 
         move = MoveNode(
-            piece, from_tile, to_tile, possible_move.killed, promoted=was_promoted
+            piece, from_tile, to_tile, possible_move.get_killed(), promoted=was_promoted
         )
 
         # Check if the current piece has more jumps available
@@ -484,17 +497,17 @@ class Board:
         self.switch_player()
 
         while move_node:
-            x, y = move_node.from_tile
-            move_node.piece = self.pieces_matrix[y][x]
+            x, y = move_node.get_from_tile()
+            move_node.set_piece(self.pieces_matrix[y][x])
 
             if move_node.killed:
                 x, y = move_node.killed.tile
-                move_node.killed = self.pieces_matrix[y][x]
+                move_node.set_killed(self.pieces_matrix[y][x])
 
             self._execute_move(move_node)
 
             if move_node.children != []:
-                move_node = move_node.children[0]
+                move_node = move_node.get_children()[0]
             else:
                 move_node = None
 
@@ -502,10 +515,10 @@ class Board:
 
         # Retrieve the piece to be moved
 
-        from_tile = move_node.from_tile
+        from_tile = move_node.get_from_tile()
         piece = self.get_piece_at_tile(from_tile)
-        to_tile = move_node.to_tile
-        killed_piece = move_node.killed
+        to_tile = move_node.get_to_tile()
+        killed_piece = move_node.get_killed()
 
         # Move the piece to the new tile
         to_tile_x, to_tile_y = to_tile
@@ -517,13 +530,13 @@ class Board:
 
         # Handle any capture
         if killed_piece:
-            killed_piece_tile_x, killed_piece_tile_y = killed_piece.tile
+            killed_piece_tile_x, killed_piece_tile_y = killed_piece.get_tile()
             self.pieces_matrix[killed_piece_tile_y][killed_piece_tile_x] = None
             killed_piece.killed()  # Mark the killed piece as not alive
-            self.pieces_list[killed_piece.color.value - 1].remove(killed_piece)
+            self.pieces_list[killed_piece.get_color().value - 1].remove(killed_piece)
 
         # Handle promotion to King if necessary
-        if isinstance(piece, Pawn) and move_node.promoted:
+        if isinstance(piece, Pawn) and move_node.get_promoted():
             self.upgrade_to_king(to_tile)
 
     # Undo Mechanics
@@ -550,38 +563,40 @@ class Board:
             reverse_move_stack.append(current_move)
 
             if current_move.children != []:
-                current_move = current_move.children[0]
+                current_move = current_move.get_children()[0]
             else:
                 current_move = []
         return reverse_move_stack
 
     def _undo_single_move(self, move_node):
         # Undo logic for a single move
-        from_tile_x, from_tile_y = move_node.from_tile
-        to_tile_x, to_tile_y = move_node.to_tile
+        from_tile_x, from_tile_y = move_node.get_from_tile()
+        to_tile_x, to_tile_y = move_node.get_to_tile()
 
-        moved_piece = self.get_piece_at_tile(move_node.to_tile)
-        if move_node.to_tile and moved_piece is not None:
+        moved_piece = self.get_piece_at_tile(move_node.get_to_tile())
+        if move_node.get_to_tile() and moved_piece is not None:
             self.pieces_matrix[from_tile_y][from_tile_x] = moved_piece
             self.pieces_matrix[to_tile_y][to_tile_x] = None
-            moved_piece.tile = move_node.from_tile
+            moved_piece.set_tile(move_node.get_from_tile())
 
-        if move_node.killed:
-            captured_piece = move_node.killed
+        if move_node.get_killed():
+            captured_piece = move_node.get_killed()
 
-            captured_piece_x, captured_piece_y = captured_piece.tile
+            captured_piece_x, captured_piece_y = captured_piece.get_tile()
             self.pieces_matrix[captured_piece_y][captured_piece_x] = captured_piece
-            captured_piece.alive = True
-            self.pieces_list[captured_piece.color.value - 1].append(captured_piece)
-        if move_node.promoted is True and isinstance(moved_piece, King):
-            king = self.get_piece_at_tile(move_node.from_tile)
-            self.demote_king_to_pawn(king, move_node.from_tile)
+            captured_piece.set_alive(True)
+            self.pieces_list[captured_piece.get_color().value - 1].append(
+                captured_piece
+            )
+        if move_node.get_promoted() == True and isinstance(moved_piece, King):
+            king = self.get_piece_at_tile(move_node.get_from_tile())
+            self.demote_king_to_pawn(king, move_node.get_from_tile())
 
     # Game State and Rules
 
     def jump_is_possible(self, color: Eplayers) -> bool:
         for piece in self.pieces_list[color.value - 1]:
-            if self.where_can_jump(piece.tile) != []:
+            if self.where_can_jump(piece.get_tile()) != []:
                 return True
         return False
 
@@ -660,18 +675,18 @@ class Board:
 
     def piece_can_be_taken(self, piece):
         # Check if any opponent can jump over the piece
-        for opponent_piece in self.pieces_list[piece.color.value - 1]:
-            jumps = self.where_can_jump(opponent_piece.tile)
+        for opponent_piece in self.pieces_list[piece.get_color().value - 1]:
+            jumps = self.where_can_jump(opponent_piece.get_tile())
             for jump in jumps:
-                if jump.killed == piece:
+                if jump.get_killed() == piece:
                     return True
         return False
 
     def is_piece_protected(self, piece):
         # A piece is considered protected if it can't be eaten if not moved / pieces behind it moves.
-        x, y = piece.tile
+        x, y = piece.get_tile()
 
-        if piece.color == Eplayers.white:
+        if piece.get_color() == Eplayers.white:
             behind_moves = [
                 (-1, -1),
                 (1, -1),
@@ -692,6 +707,10 @@ class Board:
         return True
 
     # Utilities
+
+    def get_current_player(self):
+        return self.current_player
+
     def can_get_promoted(self, piece: Piece, to_tile: tuple) -> bool:
 
         if piece is King:
@@ -817,11 +836,11 @@ class Board:
         board_representation = ""
         for y in reversed(range(BOARD_SIZE)):
             for x in range(BOARD_SIZE):
-                piece = self.pieces_matrix[y][x]
+                piece = self.get_piece_at_tile((x, y))
                 if piece:
-                    if piece.color == Eplayers.white:
+                    if piece.get_color() == Eplayers.white:
                         board_representation += "W "
-                    elif piece.color == Eplayers.black:
+                    elif piece.get_color() == Eplayers.black:
                         board_representation += "B "
                 else:
                     board_representation += ". "
@@ -829,17 +848,17 @@ class Board:
         return board_representation
 
     @staticmethod
-    def serialize_move_node(move_node):
-        piece_type = "king" if isinstance(move_node.piece, King) else "pawn"
-        piece_color = move_node.piece.color
-        from_tile = (
-            f"({move_node.from_tile[0]},{move_node.from_tile[1]})"  # Tuple to string
+    def serialize_move_node(move_node: MoveNode):
+        piece_type = "king" if isinstance(move_node.get_piece(), King) else "pawn"
+        piece_color = move_node.get_piece().get_color()
+        from_tile = f"({move_node.get_from_tile()[0]},{move_node.get_from_tile()[1]})"  # Tuple to string
+        to_tile = f"({move_node.get_to_tile()[0]},{move_node.get_to_tile()[1]})"
+        killed = (
+            str(move_node.get_killed().get_tile()) if move_node.get_killed() else "None"
         )
-        to_tile = f"({move_node.to_tile[0]},{move_node.to_tile[1]})"
-        killed = str(move_node.killed.tile) if move_node.killed else "None"
-        promoted = str(move_node.promoted)
+        promoted = str(move_node.get_promoted())
         children = ";".join(
-            [Board.serialize_move_node(child) for child in move_node.children]
+            [Board.serialize_move_node(child) for child in move_node.get_children()]
         )
 
         serialized = f"{piece_type}${piece_color}${from_tile}${to_tile}${killed}${promoted}${children}"

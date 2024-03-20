@@ -1,4 +1,5 @@
 import socket
+from config import DISCONNECT_MSG, BUFFER_SIZE, SERVER_ADDRESS
 
 DISCONNECT_MSG = "DISCONNECT!"
 BUFFER_SIZE = 2048
@@ -6,8 +7,7 @@ BUFFER_SIZE = 2048
 
 def start_server():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_address = ("10.100.102.33", 12345)
-    server_socket.bind(server_address)
+    server_socket.bind(SERVER_ADDRESS)
 
     server_socket.listen(2)
     print("Server started. Waiting for players...")

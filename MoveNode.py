@@ -78,3 +78,47 @@ class MoveNode:
             return False
 
         return True
+
+    # Getters
+    def get_piece(self):
+        return self.piece
+
+    def get_from_tile(self):
+        return self.from_tile
+
+    def get_to_tile(self):
+        return self.to_tile
+
+    def get_killed(self):
+        return self.killed
+
+    def get_promoted(self):
+        return self.promoted
+
+    def get_children(self):
+        return self.children
+
+    def get_parent(self):
+        return self.parent
+
+    # Setters
+    def set_piece(self, piece):
+        self.piece = piece
+
+    def set_from_tile(self, from_tile):
+        self.from_tile = from_tile
+
+    def set_to_tile(self, to_tile):
+        self.to_tile = to_tile
+
+    def set_killed(self, killed):
+        self.killed = killed
+
+    def set_promoted(self, promoted):
+        self.promoted = promoted
+
+    def set_children(self, children):
+        self.children = children
+
+    def set_parent(self, parent):
+        self.parent = parent

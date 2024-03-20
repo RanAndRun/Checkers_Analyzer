@@ -53,7 +53,7 @@ class CheckersAI:
 
     def find_best_move(self, board):
 
-        is_max = board.current_player == Eplayers.white
+        is_max = board.get_current_player() == Eplayers.white
         root_node = BoardNode(board)
         best_value = float("-inf") if is_max else float("inf")
         best_move = None
