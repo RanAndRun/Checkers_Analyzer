@@ -1,10 +1,10 @@
 # config.py
-import pygame
-
+# Description: This file contains the configuration for the game.
 
 WINDOW_SIZE = 1000
 BOARD_SIZE = 8
 GAME_ONLINE = True
+
 TILE_SIZE = WINDOW_SIZE / BOARD_SIZE
 SIZE = (WINDOW_SIZE, WINDOW_SIZE)
 DEPTH = 3

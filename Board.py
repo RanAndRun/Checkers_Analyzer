@@ -194,11 +194,8 @@ class Board:
         return None
 
     # Movement and Game Mechanics
-    def get_piece_at_tile(self, tile: tuple):
-        x, y = tile
-        return self.pieces_matrix[y][x]
 
-    def where_can_move(self, tile: tuple) -> list[(Tile, bool)]:
+    def where_can_move(self, tile: tuple):
         piece = self.get_piece_at_tile(tile)
         x, y = tile
         possible_tiles = []
@@ -333,13 +330,6 @@ class Board:
 
         return possible_jumps
 
-    def can_get_promoted(self, piece: Piece, to_tile: tuple) -> bool:
-        if piece.color == Eplayers.white and to_tile[1] == BOARD_SIZE - 1:
-            return True
-        elif piece.color == Eplayers.black and to_tile[1] == 0:
-            return True
-        return False
-
     def every_move_possible_for_piece(self, piece: Piece, hasJumped: Piece = None):
         # Get both possible moves and jumps for the piece
         possible_moves = self.where_can_move(piece.tile)
@@ -412,17 +402,17 @@ class Board:
 
         # If no jumps found, and no jump has been made yet, consider regular moves
         if not found_jump and not hasJumped:
-            regular_moves = self.get_regular_moves(color)
+            regular_moves = self.get_all_regular_moves_for_color(color)
             return regular_moves
 
         return jump_moves
 
-    def get_regular_moves(self, color):
+    def get_all_regular_moves_for_color(self, color):
         regular_moves = []
         promoted = False
         for piece in self.pieces_list[color.value - 1]:
             if piece.is_alive():
-                regular_options, _ = self.every_move_possible_for_piece(piece, None)
+                regular_options = self.where_can_move(piece.tile)
                 for move in regular_options:
                     if (
                         piece.color == Eplayers.white
@@ -496,6 +486,7 @@ class Board:
     def apply_move(self, move_node: MoveNode, board_analyzer=False):
         if board_analyzer:
             self.add_move_to_history(move_node)
+
         self.switch_player()
 
         while move_node:
@@ -550,14 +541,14 @@ class Board:
         last_move_sequence = self.move_history.pop()
 
         # Create a stack to store the moves in reverse order
-        reverse_move_stack = self.build_reverse_stack(last_move_sequence)
+        reverse_move_stack = self._build_reverse_stack(last_move_sequence)
 
         # Now undo the moves in reverse order
         while reverse_move_stack:
             move_to_undo = reverse_move_stack.pop()
-            self.undo_single_move(move_to_undo)
+            self._undo_single_move(move_to_undo)
 
-    def build_reverse_stack(self, move_node):
+    def _build_reverse_stack(self, move_node):
         reverse_move_stack = []
         current_move = move_node
         while current_move != []:
@@ -569,7 +560,7 @@ class Board:
                 current_move = []
         return reverse_move_stack
 
-    def undo_single_move(self, move_node):
+    def _undo_single_move(self, move_node):
         # Undo logic for a single move
         from_tile_x, from_tile_y = move_node.from_tile
         to_tile_x, to_tile_y = move_node.to_tile
@@ -634,12 +625,8 @@ class Board:
     def upgrade_to_king(self, tile: tuple):
         x, y = tile
         piece = self.pieces_matrix[y][x]
-        if piece is King:
-            return
 
-        if piece.color == Eplayers.white and tile[1] != BOARD_SIZE - 1:
-            return
-        if piece.color == Eplayers.black and tile[1] != 0:
+        if self.can_get_promoted(piece, tile) == False:
             return
 
         king = King(tile, piece.color)
@@ -692,6 +679,19 @@ class Board:
         return True
 
     # Utilities
+    def can_get_promoted(self, piece: Piece, to_tile: tuple) -> bool:
+
+        if piece is King:
+            return
+        if piece.color == Eplayers.white and to_tile[1] == BOARD_SIZE - 1:
+            return True
+        elif piece.color == Eplayers.black and to_tile[1] == 0:
+            return True
+        return False
+
+    def get_piece_at_tile(self, tile: tuple):
+        x, y = tile
+        return self.pieces_matrix[y][x]
 
     def get_tile_from_location(self, x, y) -> Tile:
         return self.tiles[y][x]
@@ -781,7 +781,9 @@ class Board:
 
     def add_move_to_history(self, move: MoveNode):
         self.move_history.append(move)
+        print("copying board")
         copy_of_board = copy.deepcopy(self)  # Renamed variable
+        print("copied board")
         copy_of_board.undo_move()
         self.board_history.append(copy_of_board)
 

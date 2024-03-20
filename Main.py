@@ -30,6 +30,7 @@ player_color = True
 if GAME_ONLINE:
     network = Network()
 
+game_over = False
 
 pygame.init()
 screen = pygame.display.set_mode(SIZE)
@@ -222,12 +223,14 @@ def display_analysis(screen, game_analysis, history, analysis_color):
 def receive_moves_forever(board, network):
     global is_white_to_play
     global MOVE_LOCK
-    while True:  # Continuous loop
+    global game_over
+    while not game_over:  # Continuous loop
         try:
             msg = network.receive()
             if msg:
                 if msg == DISCONNECT_MSG:
                     print("Opponent has disconnected.")
+                    game_over = True
                     break
                 print(f"Received move: {msg}")
                 move = board.unserialize_move_node(msg)
@@ -299,6 +302,7 @@ def main():
     global MOVE_LOCK
     global network
     global player_color
+    global game_over
 
     receive_thread = None
     first_selection = None
@@ -353,6 +357,7 @@ def main():
                         continue
                     if not ask_for_name and not showing_graph:
                         ask_for_name = True
+                        game_over = True
 
                     elif not analysis_started and not showing_graph:
 
