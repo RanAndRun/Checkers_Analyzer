@@ -29,7 +29,7 @@ def start_server():
         try:
             msg = white_player_socket.recv(BUFFER_SIZE).decode()
             print(f"[{white_player_address}]: {msg}")
-            print(msg)
+
             black_player_socket.send(msg.encode())
 
             if msg == DISCONNECT_MSG:

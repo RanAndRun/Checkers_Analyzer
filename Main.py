@@ -97,6 +97,7 @@ def handle_mouse_click(
 
                     board.add_move_to_history(before_move)
                     if GAME_ONLINE:
+                        print("sending move", before_move)
                         simplified_move_node = Board.serialize_move_node(before_move)
                         network.send(simplified_move_node)
                     hasJumped = None
@@ -300,24 +301,24 @@ def receive_moves_forever(board, network):
     global is_white_to_play
     global MOVE_LOCK
     global game_over
-    while not game_over:  # Continuous loop
-        try:
-            msg = network.receive()
-            if msg:
-                if msg == DISCONNECT_MSG:
-                    print("Opponent has disconnected.")
-                    if board.is_game_over() is None:
-                        board.resign(not player_color)
-                    game_over = True
-
-                    break
-                move = board.unserialize_move_node(msg)
-                board.apply_move(move, True)
-                with MOVE_LOCK:  # Ensure thread-safe access to is_white_to_play
+    with MOVE_LOCK:
+        while not game_over:  # Continuous loop
+            try:
+                msg = network.receive()
+                print("received move", msg)
+                if msg:
+                    if msg == DISCONNECT_MSG:
+                        print("Opponent has disconnected.")
+                        if board.is_game_over() is None:
+                            board.resign(not player_color)
+                        game_over = True
+                        break
+                    move = board.unserialize_move_node(msg)
+                    board.apply_move(move, True)
+                    # Ensure thread-safe access to is_white_to_play
                     is_white_to_play = not is_white_to_play
-                pygame.display.update()
-        except Exception as e:
-            print(f"Error receiving move: {e}")
+            except Exception as e:
+                print(f"Error receiving move: {e}")
 
 
 def get_graphs(game_results):
@@ -407,6 +408,18 @@ def main():
     graph_created = False
     show_first = True
 
+    if GAME_ONLINE:
+        # Check if the thread is None or not alive
+        if (
+            receive_thread is None
+            or not receive_thread.is_alive()
+            and network.id is not None
+        ):
+            receive_thread = threading.Thread(
+                target=receive_moves_forever, args=(board, network)
+            )
+            receive_thread.daemon = True
+            receive_thread.start()
     while run:
 
         board.draw(screen)
@@ -414,6 +427,7 @@ def main():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                game_over = True
                 if GAME_ONLINE:
                     network.close()
                 pygame.quit()
@@ -433,34 +447,25 @@ def main():
                         continue
                     if not ask_for_name and not showing_graph:
                         ask_for_name = True
+                        if not game_over:
+                            board.resign(player_color)
+                            print("resigned")
                         game_over = True
+                        if GAME_ONLINE:
+                            network.close()
+                            print("network closed")
 
                     elif not analysis_started and not showing_graph:
-
                         analysis_started = True
                         ask_for_name = False
                 elif event.key == pygame.K_RIGHT:
                     show_first = True
                 elif event.key == pygame.K_LEFT:
                     show_first = False
-                elif event.key == pygame.K_r and not ask_for_name and not showing_graph:
-                    board.resign(player_color)
-                    network.close()
-                    game_over = True
-                    ask_for_name = True
                 else:
                     text += event.unicode if ask_for_name else ""
 
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
-
-        if GAME_ONLINE:
-            # Check if the thread is None or not alive
-            if receive_thread is None or not receive_thread.is_alive() and network.id:
-                receive_thread = threading.Thread(
-                    target=receive_moves_forever, args=(board, network)
-                )
-                receive_thread.daemon = True
-                receive_thread.start()
 
         if GAME_ONLINE and is_white_to_play == player_color:
             if len(board.get_history()) > 0:
@@ -637,10 +642,16 @@ def main():
             pygame.display.flip()
             pygame.display.update()
 
+            winner = board.get_winner()
+            print("winner1", winner)
+            if winner == None:
+                print("winner is none")
+                winner = board.is_game_over()
+            print("winner2", winner)
+
             game_analysis, average_score = checkers_ai.analyze_game(history, color)
             print("average score", average_score)
 
-            winner = board.is_game_over()
             if winner == Eplayers.white:
                 DBM.add_player(text, True if player_color else False, average_score)
             elif winner == Eplayers.black:
@@ -654,6 +665,7 @@ def main():
 
         if showing_graph:
             if not graph_created:
+                print("getting matches for ", text)
                 matches = DBM.get_matches_for_name(text)
                 print("matches \n", matches)
                 graphs = get_graphs(matches)

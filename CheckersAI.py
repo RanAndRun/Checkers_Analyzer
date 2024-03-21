@@ -151,6 +151,11 @@ class CheckersAI:
             analysis_results.append((move, played_move_score, best_value, best_move))
 
         # Calculate the average score of the played moves
-        average_played_move_score = sum_of_played_move_scores / len(history)
+        if len(history) == 0:
+            average_played_move_score = 0
+        else:
+            average_played_move_score = sum_of_played_move_scores / len(history)
+            if color == Eplayers.white:
+                average_played_move_score = -average_played_move_score
         print("results", analysis_results)
         return analysis_results, average_played_move_score

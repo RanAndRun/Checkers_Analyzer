@@ -160,14 +160,14 @@ class Board:
 
         # Iterate through the moves and their children to highlight tiles
         while move:
-            from_tile_x, from_tile_y = move.from_tile
-            to_tile_x, to_tile_y = move.to_tile
+            from_tile_x, from_tile_y = move.get_from_tile()
+            to_tile_x, to_tile_y = move.get_to_tile()
 
             self.tiles[from_tile_y][from_tile_x].glow(screen, color)
             self.tiles[to_tile_y][to_tile_x].glow(screen, color)
 
             # Move to the next move in the sequence, if it exists
-            move = move.children[0] if move.children else None
+            move = move.get_children()[0] if move.get_children() else None
 
     def show_available_moves(self, from_tile: tuple, has_jumped: Piece, screen):
         x, y = from_tile
@@ -176,7 +176,7 @@ class Board:
         )
         possible_tiles = possible_jumps if possible_jumps else possible_moves
         for currTuple in possible_tiles:
-            tile = currTuple.to_tile
+            tile = currTuple.get_to_tile()
             if type(tile) == list:
                 for to_tile in tile:  # sometimes tile is a tuple, sometimes its a list.
                     x, y = to_tile
@@ -196,6 +196,7 @@ class Board:
     # Movement and Game Mechanics
 
     def where_can_move(self, tile: tuple):
+        # Get all possible regular moves for a piece at a given tile
         piece = self.get_piece_at_tile(tile)
         x, y = tile
         possible_tiles = []
@@ -213,7 +214,7 @@ class Board:
                 new_x, new_y = x + dx, y + dy
                 if self.is_location_inside_board(
                     new_x, new_y
-                ) and not self.is_tile_taken(new_x, new_y):
+                ) and not self._is_tile_taken(new_x, new_y):
                     promoted = self.can_get_promoted(piece, (new_x, new_y))
                     possible_tiles.append(
                         MoveNode(
@@ -237,7 +238,7 @@ class Board:
 
                     if not self.is_location_inside_board(new_x, new_y):
                         break
-                    elif not self.is_tile_taken(new_x, new_y):
+                    elif not self._is_tile_taken(new_x, new_y):
                         possible_tiles.append(
                             MoveNode(piece, piece.tile, (new_x, new_y))
                         )
@@ -245,19 +246,6 @@ class Board:
                         break
 
         return possible_tiles
-
-    def is_tile_taken(self, x, y):
-        return (
-            self.is_location_inside_board(x, y) and self.pieces_matrix[y][x] is not None
-        )
-
-    def is_opponent_pawn_on_tile(self, x, y, color):
-        return self.pieces_matrix[y][x] and self.pieces_matrix[y][x].color == Eplayers(
-            3 - color.value
-        )
-
-    def is_a_color_pawn_on_tile(self, x, y, color):
-        return self.pieces_matrix[y][x] and self.pieces_matrix[y][x].color == color
 
     def where_can_jump(self, tile: tuple):
         piece = self.get_piece_at_tile(tile)
@@ -275,10 +263,12 @@ class Board:
                 if self.is_location_inside_board(
                     new_x, new_y
                 ) and self.is_location_inside_board(jump_x, jump_y):
-                    if self.is_tile_taken(
+                    if self._is_tile_taken(
                         new_x, new_y
-                    ) and self.is_opponent_pawn_on_tile(new_x, new_y, piece.color):
-                        if not self.is_tile_taken(jump_x, jump_y):
+                    ) and self._is_a_color_pawn_on_tile(
+                        new_x, new_y, Eplayers(3 - piece.color.value)
+                    ):
+                        if not self._is_tile_taken(jump_x, jump_y):
                             promoted = self.can_get_promoted(piece, (jump_x, jump_y))
                             possible_jumps.append(
                                 MoveNode(
@@ -305,21 +295,21 @@ class Board:
 
                     if not self.is_location_inside_board(
                         new_x, new_y
-                    ) or self.is_a_color_pawn_on_tile(new_x, new_y, piece.get_color()):
+                    ) or self._is_a_color_pawn_on_tile(new_x, new_y, piece.get_color()):
                         break
                     if (
-                        self.is_tile_taken(new_x, new_y)
-                        and self.is_opponent_pawn_on_tile(
-                            new_x, new_y, piece.get_color()
+                        self._is_tile_taken(new_x, new_y)
+                        and self._is_a_color_pawn_on_tile(
+                            new_x, new_y, Eplayers(3 - piece.get_color().value)
                         )
                         or found
-                        and not self.is_tile_taken(new_x, new_y)
+                        and not self._is_tile_taken(new_x, new_y)
                     ):
                         if not found:
                             found = self.pieces_matrix[new_y][new_x]
                         if not self.is_location_inside_board(new_x + dx, new_y + dy):
                             break
-                        if not self.is_tile_taken(new_x + dx, new_y + dy):
+                        if not self._is_tile_taken(new_x + dx, new_y + dy):
 
                             possible_jumps.append(
                                 MoveNode(
@@ -357,7 +347,7 @@ class Board:
         return possible_moves, possible_jumps
 
     def every_move_for_player(
-        self, color: Eplayers, hasJumped: Piece = None, depth=0, max_depth=3
+        self, color: Eplayers, hasJumped: Piece = None, depth=0, max_depth=4
     ):
         if depth > max_depth:
             return []  # Stop recursion if max depth is exceeded
@@ -409,26 +399,19 @@ class Board:
 
         # If no jumps found, and no jump has been made yet, consider regular moves
         if not found_jump and not hasJumped:
-            regular_moves = self.get_all_regular_moves_for_color(color)
+            regular_moves = self.get_all_regular_moves_for_player(color)
             return regular_moves
 
         return jump_moves
 
-    def get_all_regular_moves_for_color(self, color):
+    def get_all_regular_moves_for_player(self, color):
         regular_moves = []
         promoted = False
         for piece in self.pieces_list[color.value - 1]:
             if piece.is_alive():
                 regular_options = self.where_can_move(piece.get_tile())
                 for move in regular_options:
-                    if (
-                        piece.get_color() == Eplayers.white
-                        and move.get_to_tile()[1] == BOARD_SIZE - 1
-                    ) or (
-                        piece.get_color() == Eplayers.black
-                        and move.get_to_tile()[1] == 0
-                    ):
-                        promoted = True
+                    promoted = self.can_get_promoted(piece, move.get_to_tile())
                     new_node = MoveNode(
                         piece,
                         piece.get_tile(),
@@ -439,6 +422,14 @@ class Board:
                     promoted = False
                     regular_moves.append(new_node)
         return regular_moves
+
+    def _is_a_color_pawn_on_tile(self, x, y, color):
+        return self.pieces_matrix[y][x] and self.pieces_matrix[y][x].color == color
+
+    def _is_tile_taken(self, x, y):
+        return (
+            self.is_location_inside_board(x, y) and self.pieces_matrix[y][x] is not None
+        )
 
     def move(self, from_tile: tuple, to_tile: tuple, hasJumped: bool, screen):
         x, y = from_tile
@@ -644,7 +635,7 @@ class Board:
             self.winner = "draw"  # Game is a draw
         # If none of the above, the game is still ongoing
         else:
-            self.winner = None
+            return None
 
         return self.winner
 
@@ -707,7 +698,7 @@ class Board:
             dx, dy = move
             behind_x, behind_y = x + dx, y + dy
 
-            if not self.is_tile_taken(behind_x, behind_y):
+            if not self._is_tile_taken(behind_x, behind_y):
                 return False
 
         return True
@@ -852,6 +843,9 @@ class Board:
                     board_representation += ". "
             board_representation += "\n"
         return board_representation
+
+    def get_winner(self):
+        return self.winner
 
     @staticmethod
     def serialize_move_node(move_node: MoveNode):

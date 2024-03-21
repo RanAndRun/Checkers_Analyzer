@@ -31,7 +31,7 @@ class Network:
 
     def receive(self):
         try:
-            if self.id is not None:
+            if self.id != None:
                 msg = self.client.recv(BUFFER_SIZE).decode()
                 if msg == DISCONNECT_MSG:
                     self.client.close()

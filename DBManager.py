@@ -52,5 +52,6 @@ class DBManager:
 
     def add_game(self, name, score):
         self.add_player(name, True, score)
+
     def close_connection(self):
         self.conn.close()
