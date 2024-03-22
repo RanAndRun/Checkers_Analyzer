@@ -15,13 +15,9 @@ from config import *
 
 MOVE_LOCK = threading.Lock()
 
-FPS = 30
+
 FPS_CLOCK = pygame.time.Clock()
 
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLACK = (0, 0, 0)
-BLUE = (0, 0, 255)
 
 is_white_to_play = True
 player_color = True
@@ -298,24 +294,28 @@ def display_analysis(screen, game_analysis, history, analysis_color):
 
 
 def receive_moves_forever(board, network):
+    global player_color
     global is_white_to_play
     global MOVE_LOCK
     global game_over
     with MOVE_LOCK:
-        while not game_over:  # Continuous loop
+        while not game_over:
             try:
                 msg = network.receive()
-                print("received move", msg)
+
                 if msg:
+                    print("received move", player_color)
                     if msg == DISCONNECT_MSG:
                         print("Opponent has disconnected.")
                         if board.is_game_over() is None:
                             board.resign(not player_color)
                         game_over = True
+                        network.send(DISCONNECT_ACK_MSG)  # Acknowledge disconnect
+                        network.shutdown()
                         break
+                    # Process normal moves
                     move = board.unserialize_move_node(msg)
                     board.apply_move(move, True)
-                    # Ensure thread-safe access to is_white_to_play
                     is_white_to_play = not is_white_to_play
             except Exception as e:
                 print(f"Error receiving move: {e}")
@@ -413,7 +413,7 @@ def main():
         if (
             receive_thread is None
             or not receive_thread.is_alive()
-            and network.id is not None
+            and network.is_white is not None
         ):
             receive_thread = threading.Thread(
                 target=receive_moves_forever, args=(board, network)
@@ -425,27 +425,32 @@ def main():
         board.draw(screen)
         mouse_clicked = False
 
+        # Check for events- user input
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                # If the user closes the window, the game will end
                 game_over = True
                 if GAME_ONLINE:
                     network.close()
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.MOUSEMOTION:
+                # Get the x and y cordinate of the mouse event
                 mouse_x, mouse_y = event.pos
             elif event.type == pygame.MOUSEBUTTONUP:
+                # Get the x and y cordinate of the mouse event
                 mouse_x, mouse_y = event.pos
                 mouse_clicked = True
 
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_BACKSPACE:
-                    text = text[:-1]
-                elif event.key == pygame.K_KP_ENTER or event.key == pygame.K_RETURN:
 
+                if event.key == pygame.K_KP_ENTER or event.key == pygame.K_RETURN:
+                    # If the user presses enter or escape
                     if ask_for_name and text == "":
+                        # can't submit empty name
                         continue
                     if not ask_for_name and not showing_graph:
+                        # if the the user in the game and presses enter close the game. if the game is not over, resign
                         ask_for_name = True
                         if not game_over:
                             board.resign(player_color)
@@ -456,13 +461,20 @@ def main():
                             print("network closed")
 
                     elif not analysis_started and not showing_graph:
+                        # submit the name and start the analysis
                         analysis_started = True
                         ask_for_name = False
                 elif event.key == pygame.K_RIGHT:
+                    # show the second graph
                     show_first = True
                 elif event.key == pygame.K_LEFT:
+                    # show the first graph
                     show_first = False
+                elif event.key == pygame.K_BACKSPACE:
+                    # remove the last character from the name
+                    text = text[:-1]
                 else:
+                    # add the character to the name
                     text += event.unicode if ask_for_name else ""
 
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)

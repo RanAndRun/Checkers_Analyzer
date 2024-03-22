@@ -252,7 +252,7 @@ class Board:
         x, y = tile
         possible_jumps = []
 
-        if isinstance(piece, Pawn) and piece.alive:
+        if isinstance(piece, Pawn) and piece.is_alive():
             directions = ([(1, 1), (-1, 1)], [(1, -1), (-1, -1)])
             directions = directions[piece.color.value - 1]
 
@@ -266,7 +266,7 @@ class Board:
                     if self._is_tile_taken(
                         new_x, new_y
                     ) and self._is_a_color_pawn_on_tile(
-                        new_x, new_y, Eplayers(3 - piece.color.value)
+                        new_x, new_y, Eplayers(3 - piece.get_color().value)
                     ):
                         if not self._is_tile_taken(jump_x, jump_y):
                             promoted = self.can_get_promoted(piece, (jump_x, jump_y))
@@ -591,28 +591,23 @@ class Board:
 
     # Game State and Rules
 
-    def jump_is_possible(self, color: Eplayers) -> bool:
-        for piece in self.pieces_list[color.value - 1]:
-            if self.where_can_jump(piece.get_tile()) != []:
-                return True
-        return False
-
-    def has_more_jumps(self, tile):
-        return self.where_can_jump(tile) != []
-
     def is_player_out_of_moves(self, player_color):
         # Check if a player has no legal moves left.
 
         for piece in self.pieces_list[player_color.value - 1]:
-            if piece.is_alive() and self.every_move_possible_for_piece(piece):
+            if piece.is_alive() and self.every_move_possible_for_piece(piece) != (
+                [],
+                [],
+            ):
                 return False  # Found a piece with a legal move
         return True  # No legal moves found
 
     def is_player_out_of_pieces(self, player_color):
         # Check if a player has no pieces left.
-        return all(
-            not piece.is_alive() for piece in self.pieces_list[player_color.value - 1]
-        )
+        for piece in self.pieces_list[player_color.value - 1]:
+            if piece.is_alive():
+                return False
+        return True
 
     def is_game_over(self):
         white_out_of_moves = self.is_player_out_of_moves(Eplayers.white)
@@ -704,6 +699,14 @@ class Board:
         return True
 
     # Utilities
+    def has_more_jumps(self, tile):
+        return self.where_can_jump(tile) != []
+
+    def jump_is_possible(self, color: Eplayers) -> bool:
+        for piece in self.pieces_list[color.value - 1]:
+            if self.has_more_jumps(piece.get_tile()):
+                return True
+        return False
 
     def get_current_player(self):
         return self.current_player
