@@ -55,7 +55,7 @@ def handle_mouse_click(
     clicked_tile,
     first_selection,
     is_white_to_play,
-    hasJumped,
+    has_jumped,
     before_move,
 ):
     global game_over
@@ -72,7 +72,7 @@ def handle_mouse_click(
         move_exists = False
         if piece:
             moves_possible, jumps_possible = board.every_move_possible_for_piece(
-                piece, hasJumped
+                piece, has_jumped
             )
             possible_moves = jumps_possible if jumps_possible else moves_possible
 
@@ -82,7 +82,7 @@ def handle_mouse_click(
                     break
 
             if move_exists:
-                move, hasJumped = board.move(first_selection, (x, y), hasJumped, screen)
+                move, has_jumped = board.move(first_selection, (x, y), has_jumped, screen)
 
                 if before_move:
                     last_node = before_move
@@ -94,7 +94,7 @@ def handle_mouse_click(
                 else:
                     before_move = move
 
-                if not hasJumped or not board.has_more_jumps((x, y)):
+                if not has_jumped or not board.has_more_jumps((x, y)):
                     is_white_to_play = not is_white_to_play
                     board.switch_player()
 
@@ -104,12 +104,12 @@ def handle_mouse_click(
                         simplified_move_node = Board.serialize_move_node(before_move)
                         network.send(simplified_move_node)
 
-                    hasJumped = None
+                    has_jumped = None
                     before_move = None
 
         first_selection = None
 
-    return first_selection, is_white_to_play, hasJumped, before_move
+    return first_selection, is_white_to_play, has_jumped, before_move
 
 
 def display_analysis(screen, game_analysis, history, analysis_color):
@@ -402,7 +402,7 @@ def main():
     if GAME_ONLINE:
         player_color = True if network.connect() == "True" else False
 
-    hasJumped = None
+    has_jumped = None
     run = True
     text = ""
     mouse_x = 0  # store x cordinate of mouse event
@@ -515,7 +515,7 @@ def main():
                     Eplayers.white if is_white_to_play else Eplayers.black
                 ):
                     board.show_available_moves(
-                        mouse_on_tile.get_location(), hasJumped, screen
+                        mouse_on_tile.get_location(), has_jumped, screen
                     )
                 if (
                     mouse_clicked
@@ -526,14 +526,14 @@ def main():
                     (
                         first_selection,
                         is_white_to_play,
-                        hasJumped,
+                        has_jumped,
                         before_move,
                     ) = handle_mouse_click(
                         board,
                         mouse_on_tile,
                         first_selection,
                         is_white_to_play,
-                        hasJumped,
+                        has_jumped,
                         before_move,
                     )
 
@@ -541,19 +541,19 @@ def main():
                     (
                         first_selection,
                         is_white_to_play,
-                        hasJumped,
+                        has_jumped,
                         before_move,
                     ) = handle_mouse_click(
                         board,
                         mouse_on_tile,
                         first_selection,
                         is_white_to_play,
-                        hasJumped,
+                        has_jumped,
                         before_move,
                     )
 
                 if first_selection:
-                    board.show_available_moves(first_selection, hasJumped, screen)
+                    board.show_available_moves(first_selection, has_jumped, screen)
                     x, y = first_selection
                     board.get_tile_from_location(x, y).glow(screen, Ecolors.blue)
 
@@ -581,7 +581,7 @@ def main():
                     Eplayers.white if is_white_to_play else Eplayers.black
                 ):
                     board.show_available_moves(
-                        mouse_on_tile.get_location(), hasJumped, screen
+                        mouse_on_tile.get_location(), has_jumped, screen
                     )
                 if (
                     mouse_clicked
@@ -592,14 +592,14 @@ def main():
                     (
                         first_selection,
                         is_white_to_play,
-                        hasJumped,
+                        has_jumped,
                         before_move,
                     ) = handle_mouse_click(
                         board,
                         mouse_on_tile,
                         first_selection,
                         is_white_to_play,
-                        hasJumped,
+                        has_jumped,
                         before_move,
                     )
 
@@ -607,25 +607,24 @@ def main():
                     (
                         first_selection,
                         is_white_to_play,
-                        hasJumped,
+                        has_jumped,
                         before_move,
                     ) = handle_mouse_click(
                         board,
                         mouse_on_tile,
                         first_selection,
                         is_white_to_play,
-                        hasJumped,
+                        has_jumped,
                         before_move,
                     )
 
                 if first_selection:
-                    board.show_available_moves(first_selection, hasJumped, screen)
+                    board.show_available_moves(first_selection, has_jumped, screen)
                     x, y = first_selection
                     board.get_tile_from_location(x, y).glow(screen, Ecolors.blue)
 
                 if board.is_game_over() is not None:
                     game_over = True
-                    network.close()
         # Assuming you have a lock defined somewhere in your code
 
         if ask_for_name:
