@@ -43,6 +43,12 @@ backround = os.path.join("assets", "backround.jpg")
 backround = pygame.image.load(backround)
 backround = pygame.transform.scale(backround, SIZE)
 
+you_win = os.path.join("assets", "you_win.png")
+you_win = pygame.image.load(you_win)
+
+you_lose = os.path.join("assets", "you_lose.png")
+you_lose = pygame.image.load(you_lose)
+
 
 def handle_mouse_click(
     board: Board,
@@ -52,6 +58,7 @@ def handle_mouse_click(
     hasJumped,
     before_move,
 ):
+    global game_over
     x, y = clicked_tile.get_location()
     if first_selection is None:
         # Select a piece if it belongs to the current player
@@ -96,6 +103,7 @@ def handle_mouse_click(
                         print("sending move", before_move)
                         simplified_move_node = Board.serialize_move_node(before_move)
                         network.send(simplified_move_node)
+
                     hasJumped = None
                     before_move = None
 
@@ -308,7 +316,11 @@ def receive_moves_forever(board, network):
                     if msg == DISCONNECT_MSG:
                         print("Opponent has disconnected.")
                         if board.is_game_over() is None:
-                            board.resign(not player_color)
+                            print(not player_color, "resigns.")
+                            color = Eplayers.black if player_color else Eplayers.white
+                            board.resign(color)  # Opponent resigns
+                        print("ther WINNER is ", board.get_winner())
+
                         game_over = True
                         network.send(DISCONNECT_ACK_MSG)  # Acknowledge disconnect
                         network.shutdown()
@@ -316,6 +328,8 @@ def receive_moves_forever(board, network):
                     # Process normal moves
                     move = board.unserialize_move_node(msg)
                     board.apply_move(move, True)
+                    if board.is_game_over() is not None:
+                        game_over = True
                     is_white_to_play = not is_white_to_play
             except Exception as e:
                 print(f"Error receiving move: {e}")
@@ -453,7 +467,9 @@ def main():
                         # if the the user in the game and presses enter close the game. if the game is not over, resign
                         ask_for_name = True
                         if not game_over:
-                            board.resign(player_color)
+                            board.resign(
+                                Eplayers.white if player_color else Eplayers.black
+                            )
                             print("resigned")
                         game_over = True
                         if GAME_ONLINE:
@@ -541,6 +557,10 @@ def main():
                     x, y = first_selection
                     board.get_tile_from_location(x, y).glow(screen, Ecolors.blue)
 
+                if board.is_game_over() is not None:
+                    game_over = True
+                    network.close()
+
         if not GAME_ONLINE:
             if len(board.get_history()) > 0:
                 last_move = board.get_history()[-1]
@@ -602,6 +622,10 @@ def main():
                     board.show_available_moves(first_selection, hasJumped, screen)
                     x, y = first_selection
                     board.get_tile_from_location(x, y).glow(screen, Ecolors.blue)
+
+                if board.is_game_over() is not None:
+                    game_over = True
+                    network.close()
         # Assuming you have a lock defined somewhere in your code
 
         if ask_for_name:
@@ -632,6 +656,26 @@ def main():
             )
 
             pygame.display.flip()
+
+        if game_over and not ask_for_name and not showing_graph:
+            # If the game is over and the user has not entered a name, show the game result
+            color = Eplayers.white if player_color else Eplayers.black
+            if board.get_winner() == color:
+                screen.blit(
+                    you_win,
+                    (
+                        WINDOW_SIZE / 2 - you_win.get_width() / 2,
+                        WINDOW_SIZE / 2 - you_win.get_height() / 2,
+                    ),
+                )
+            elif board.get_winner() != color:
+                screen.blit(
+                    you_lose,
+                    (
+                        WINDOW_SIZE / 2 - you_lose.get_width() / 2,
+                        WINDOW_SIZE / 2 - you_lose.get_height() / 2,
+                    ),
+                )
 
         if analysis_started:
 
