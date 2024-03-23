@@ -14,10 +14,7 @@ from config import *
 
 
 MOVE_LOCK = threading.Lock()
-
-
 FPS_CLOCK = pygame.time.Clock()
-
 
 is_white_to_play = True
 player_color = True
@@ -30,24 +27,6 @@ game_over = False
 pygame.init()
 screen = pygame.display.set_mode(SIZE)
 pygame.display.set_caption("Checkers_Analyzer")
-
-explain = os.path.join("assets", "scroll.png")
-explain = pygame.image.load(explain)
-explain = pygame.transform.scale(explain, SIZE)
-
-question_mark = os.path.join("assets", "questionMark.png")
-question_mark = pygame.image.load(question_mark)
-question_mark = pygame.transform.scale(question_mark, (TILE_SIZE, TILE_SIZE))
-
-backround = os.path.join("assets", "backround.jpg")
-backround = pygame.image.load(backround)
-backround = pygame.transform.scale(backround, SIZE)
-
-you_win = os.path.join("assets", "you_win.png")
-you_win = pygame.image.load(you_win)
-
-you_lose = os.path.join("assets", "you_lose.png")
-you_lose = pygame.image.load(you_lose)
 
 
 def handle_mouse_click(
@@ -82,7 +61,7 @@ def handle_mouse_click(
                     break
 
             if move_exists:
-                move, has_jumped = board.move(first_selection, (x, y), has_jumped, screen)
+                move, has_jumped = board.move(first_selection, (x, y), has_jumped)
 
                 if before_move:
                     last_node = before_move
@@ -94,7 +73,7 @@ def handle_mouse_click(
                 else:
                     before_move = move
 
-                if not has_jumped or not board.has_more_jumps((x, y)):
+                if not has_jumped or not board._has_more_jumps((x, y)):
                     is_white_to_play = not is_white_to_play
                     board.switch_player()
 
@@ -116,14 +95,14 @@ def display_analysis(screen, game_analysis, history, analysis_color):
     def handle_key_events():
         nonlocal move_index, display_state, mouse_clicked, mouse_x, mouse_y, analysis_board, show_explanation
         global running
-        global explain
-        global question_mark
+        global EXPLAIN
+        global QUESTION_MARK
         for event in pygame.event.get():
-            if (
-                event.type == pygame.QUIT
-                or event.type == pygame.KEYDOWN
-                and event.key == pygame.K_ESCAPE
-            ):
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                running = False
                 return False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
@@ -151,18 +130,18 @@ def display_analysis(screen, game_analysis, history, analysis_color):
     move_index = -1
     mouse_clicked, mouse_x, mouse_y, show_explanation = False, 0, 0, False
 
-    question_mark_rect = question_mark.get_rect()
+    question_mark_rect = QUESTION_MARK.get_rect()
 
     display_state = "start"  # Can be 'start', 'played_move', 'best_move'
 
     screen.fill((255, 255, 255))
     analysis_board.draw(screen)
 
-    screen.blit(question_mark, question_mark_rect)
+    screen.blit(QUESTION_MARK, question_mark_rect)
     pygame.display.update()
 
     move_to_show = None
-    is_played_move_best_move = False
+    move_type = "move made"
     best_move = None
 
     while running:
@@ -178,7 +157,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
 
             if display_state == "start":
 
-                is_played_move_best_move = False
+                move_type = "played move"
 
                 if current_move.get_piece().get_color() == analysis_color:
                     played_move, move_score, best_move_score, best_move = game_analysis[
@@ -187,11 +166,11 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     analysis_board.apply_move(played_move, True)
                     analysis_board.draw(screen)
 
-                    if best_move.__eq__(played_move):
-                        is_played_move_best_move = True
-
-                    best_move = best_move
                     display_state = "best_move"
+                    move_type = "best move"
+
+                    if best_move.__eq__(played_move):
+                        move_type = "played move best"
 
                     move_to_show = played_move
                 else:
@@ -201,102 +180,23 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     display_state = "played_move"
                     move_to_show = current_move
 
-        if show_explanation:
-            screen.blit(explain, (0, 0))
-        else:
-            if move_to_show:
-                analysis_board.show_move_made(
-                    move_to_show,
+            analysis_board.show_move(
+                move_to_show,
+                screen,
+                current_move.get_piece().get_color() == analysis_color,
+                "played move",
+            )
+            if best_move:
+                analysis_board.show_move(
+                    best_move,
                     screen,
-                    current_move.get_piece().get_color() == analysis_color,
-                    is_played_move_best_move,
+                    True,
+                    move_type,
                 )
-            if is_played_move_best_move:
-                # show the played move in yellow
-                analysis_board.show_move_made(
-                    current_move, screen, True, is_played_move_best_move
-                )
-            elif best_move is not None:
-                analysis_board.show_better_move(best_move, screen)
-
-        screen.blit(question_mark, question_mark_rect)
-        pygame.display.update()
-        FPS_CLOCK.tick(FPS)
-
-    running = True
-    analysis_board = Board(screen)  # Assuming this is your custom Board class
-    move_index = -1
-    mouse_clicked, mouse_x, mouse_y, show_explanation = False, 0, 0, False
-
-    question_mark_rect = question_mark.get_rect()
-
-    display_state = "start"  # Can be 'start', 'played_move', 'best_move'
-
-    screen.fill((255, 255, 255))
-    analysis_board.draw(screen)
-
-    screen.blit(question_mark, question_mark_rect)
-    pygame.display.update()
-
-    move_to_show = None
-    is_played_move_best_move = False
-    best_move = None
-
-    while running:
-        screen.fill((255, 255, 255))
-        analysis_board.draw(screen)
-        if not handle_key_events():
-            break
-
-        if move_index == -1:
-            analysis_board.draw(screen)
-        elif 0 <= move_index < len(history):
-            current_move, _ = history[move_index]
-
-            if display_state == "start":
-
-                is_played_move_best_move = False
-
-                if current_move.get_piece().get_color() == analysis_color:
-                    played_move, move_score, best_move_score, best_move = game_analysis[
-                        int(move_index / 2)
-                    ]
-                    analysis_board.apply_move(played_move, True)
-                    analysis_board.draw(screen)
-
-                    if best_move.__eq__(played_move):
-                        is_played_move_best_move = True
-
-                    best_move = best_move
-                    display_state = "best_move"
-
-                    move_to_show = played_move
-                else:
-                    best_move = None
-                    analysis_board.apply_move(current_move, True)
-                    analysis_board.draw(screen)
-                    display_state = "played_move"
-                    move_to_show = current_move
-
         if show_explanation:
-            screen.blit(explain, (0, 0))
-        else:
-            if move_to_show:
-                analysis_board.show_move_made(
-                    move_to_show,
-                    screen,
-                    current_move.get_piece().get_color() == analysis_color,
-                    is_played_move_best_move,
-                )
-            if is_played_move_best_move:
-                # show the played move in yellow
-                analysis_board.show_move_made(
-                    current_move, screen, True, is_played_move_best_move
-                )
-            elif best_move is not None:
-                analysis_board.show_better_move(best_move, screen)
+            screen.blit(EXPLAIN, (0, 0))
 
-        screen.blit(question_mark, question_mark_rect)
+        screen.blit(QUESTION_MARK, question_mark_rect)
         pygame.display.update()
         FPS_CLOCK.tick(FPS)
 
@@ -423,19 +323,14 @@ def main():
     show_first = True
 
     if GAME_ONLINE:
-        # Check if the thread is None or not alive
-        if (
-            receive_thread is None
-            or not receive_thread.is_alive()
-            and network.is_white is not None
-        ):
-            receive_thread = threading.Thread(
-                target=receive_moves_forever, args=(board, network)
-            )
-            receive_thread.daemon = True
-            receive_thread.start()
-    while run:
+        # Start the thread to receive moves
+        receive_thread = threading.Thread(
+            target=receive_moves_forever, args=(board, network)
+        )
+        receive_thread.daemon = True
+        receive_thread.start()
 
+    while run:
         board.draw(screen)
         mouse_clicked = False
 
@@ -460,9 +355,7 @@ def main():
 
                 if event.key == pygame.K_KP_ENTER or event.key == pygame.K_RETURN:
                     # If the user presses enter or escape
-                    if ask_for_name and text == "":
-                        # can't submit empty name
-                        continue
+
                     if not ask_for_name and not showing_graph:
                         # if the the user in the game and presses enter close the game. if the game is not over, resign
                         ask_for_name = True
@@ -475,27 +368,26 @@ def main():
                         if GAME_ONLINE:
                             network.close()
                             print("network closed")
-
-                    elif not analysis_started and not showing_graph:
+                    elif ask_for_name and text != "":
                         # submit the name and start the analysis
                         analysis_started = True
                         ask_for_name = False
-                elif event.key == pygame.K_RIGHT:
+                elif event.key == pygame.K_RIGHT and showing_graph:
                     # show the second graph
                     show_first = True
-                elif event.key == pygame.K_LEFT:
+                elif event.key == pygame.K_LEFT and showing_graph:
                     # show the first graph
                     show_first = False
-                elif event.key == pygame.K_BACKSPACE:
+                elif event.key == pygame.K_BACKSPACE and ask_for_name:
                     # remove the last character from the name
                     text = text[:-1]
-                else:
-                    # add the character to the name
-                    text += event.unicode if ask_for_name else ""
+                elif ask_for_name:
+                    text += event.unicode
 
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
 
-        if GAME_ONLINE and is_white_to_play == player_color:
+        # showing the last move with green glow
+        if GAME_ONLINE and is_white_to_play == player_color or not GAME_ONLINE:
             if len(board.get_history()) > 0:
                 last_move = board.get_history()[-1]
                 last_move_from_tile_x, last_move_from_tile_y = last_move[
@@ -508,6 +400,8 @@ def main():
                 board.get_tile_from_location(
                     last_move_to_tile_x, last_move_to_tile_y
                 ).glow(screen, Ecolors.green)
+
+            # if the player's mouse if on a tile
             if mouse_on_tile:
                 x, y = mouse_on_tile.get_location()
                 mouse_on_pawn = board.get_piece_at_tile((x, y))
@@ -517,6 +411,8 @@ def main():
                     board.show_available_moves(
                         mouse_on_tile.get_location(), has_jumped, screen
                     )
+
+                # if the player clicked on a pawn
                 if (
                     mouse_clicked
                     and mouse_on_pawn
@@ -537,6 +433,7 @@ def main():
                         before_move,
                     )
 
+                # if the player clicked on an empty tile
                 elif mouse_clicked:
                     (
                         first_selection,
@@ -552,86 +449,23 @@ def main():
                         before_move,
                     )
 
+                # show the available moves for the selected pawn
                 if first_selection:
                     board.show_available_moves(first_selection, has_jumped, screen)
                     x, y = first_selection
                     board.get_tile_from_location(x, y).glow(screen, Ecolors.blue)
 
+                # if the game is over, close the game
                 if board.is_game_over() is not None:
                     game_over = True
-                    network.close()
-
-        if not GAME_ONLINE:
-            if len(board.get_history()) > 0:
-                last_move = board.get_history()[-1]
-                last_move_from_tile_x, last_move_from_tile_y = last_move[
-                    0
-                ].get_from_tile()
-                last_move_to_tile_x, last_move_to_tile_y = last_move[0].get_to_tile()
-                board.get_tile_from_location(
-                    last_move_from_tile_x, last_move_from_tile_y
-                ).glow(screen, Ecolors.green)
-                board.get_tile_from_location(
-                    last_move_to_tile_x, last_move_to_tile_y
-                ).glow(screen, Ecolors.green)
-            if mouse_on_tile:
-                x, y = mouse_on_tile.get_location()
-                mouse_on_pawn = board.get_piece_at_tile((x, y))
-                if mouse_on_pawn and mouse_on_pawn.get_color() == (
-                    Eplayers.white if is_white_to_play else Eplayers.black
-                ):
-                    board.show_available_moves(
-                        mouse_on_tile.get_location(), has_jumped, screen
-                    )
-                if (
-                    mouse_clicked
-                    and mouse_on_pawn
-                    and mouse_on_pawn.get_color()
-                    == (Eplayers.white if is_white_to_play else Eplayers.black)
-                ):
-                    (
-                        first_selection,
-                        is_white_to_play,
-                        has_jumped,
-                        before_move,
-                    ) = handle_mouse_click(
-                        board,
-                        mouse_on_tile,
-                        first_selection,
-                        is_white_to_play,
-                        has_jumped,
-                        before_move,
-                    )
-
-                elif mouse_clicked:
-                    (
-                        first_selection,
-                        is_white_to_play,
-                        has_jumped,
-                        before_move,
-                    ) = handle_mouse_click(
-                        board,
-                        mouse_on_tile,
-                        first_selection,
-                        is_white_to_play,
-                        has_jumped,
-                        before_move,
-                    )
-
-                if first_selection:
-                    board.show_available_moves(first_selection, has_jumped, screen)
-                    x, y = first_selection
-                    board.get_tile_from_location(x, y).glow(screen, Ecolors.blue)
-
-                if board.is_game_over() is not None:
-                    game_over = True
-        # Assuming you have a lock defined somewhere in your code
+                    if GAME_ONLINE:
+                        network.close()
 
         if ask_for_name:
             if GAME_ONLINE:
                 network.close()
             color = (100, 100, 100)
-            screen.blit(backround, (0, 0))
+            screen.blit(BACKROUND, (0, 0))
             font = pygame.font.Font(None, WINDOW_SIZE // 20)
 
             txt_surface = font.render(text, True, color)
@@ -661,18 +495,18 @@ def main():
             color = Eplayers.white if player_color else Eplayers.black
             if board.get_winner() == color:
                 screen.blit(
-                    you_win,
+                    YOU_WIN,
                     (
-                        WINDOW_SIZE / 2 - you_win.get_width() / 2,
-                        WINDOW_SIZE / 2 - you_win.get_height() / 2,
+                        WINDOW_SIZE / 2 - YOU_WIN.get_width() / 2,
+                        WINDOW_SIZE / 2 - YOU_WIN.get_height() / 2,
                     ),
                 )
             elif board.get_winner() != color:
                 screen.blit(
-                    you_lose,
+                    YOU_LOSE,
                     (
-                        WINDOW_SIZE / 2 - you_lose.get_width() / 2,
-                        WINDOW_SIZE / 2 - you_lose.get_height() / 2,
+                        WINDOW_SIZE / 2 - YOU_LOSE.get_width() / 2,
+                        WINDOW_SIZE / 2 - YOU_LOSE.get_height() / 2,
                     ),
                 )
 
@@ -686,7 +520,7 @@ def main():
                 color = Eplayers.white
 
             print("analyzing with player color", color)
-            screen.blit(backround, (0, 0))
+            screen.blit(BACKROUND, (0, 0))
             please_wait_text = font.render("Analyzing... Please wait", True, BLACK)
             please_wait_text_y = int(WINDOW_SIZE * 0.07)
             screen.blit(

@@ -21,33 +21,6 @@ class Piece:
         size = (WINDOW_SIZE / BOARD_SIZE, WINDOW_SIZE / BOARD_SIZE)
         self.image = pygame.transform.scale(self.image, size)
 
-    def get_tile(self):
-        return self.tile
-
-    def set_tile(self, value):
-        self.tile = value
-
-    def get_color(self):
-        return self.color
-
-    def set_color(self, value):
-        self.color = value
-
-    def get_white_img_path(self):
-        return self.white_img_path
-
-    def set_white_img_path(self, value):
-        self.white_img_path = value
-
-    def get_black_img_path(self):
-        return self.black_img_path
-
-    def set_black_img_path(self, value):
-        self.black_img_path = value
-
-    def set_alive(self, value):
-        self.alive = value
-
     def move(self, to_tile: tuple[int, int]):
         self.tile = to_tile
 
@@ -89,3 +62,15 @@ class Piece:
         )
 
         return copied_piece
+
+    def get_color(self):
+        return self.color
+
+    def set_alive(self, value):
+        self.alive = value
+
+    def get_tile(self):
+        return self.tile
+
+    def set_tile(self, tile):
+        self.tile = tile

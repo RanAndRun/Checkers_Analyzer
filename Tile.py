@@ -13,29 +13,34 @@ class Tile:
         self.x_point = x_point
         self.y_point = y_point
         self.tile_rect = pygame.Rect(x_point, y_point, TILE_SIZE, TILE_SIZE)
-        def set_row(self, row):
-            self.row = row
 
-        def set_column(self, column):
-            self.column = column
+    def get_tile_rect(self):
+        return self.tile_rect
 
-        def set_x_point(self, x_point):
-            self.x_point = x_point
+    def set_row(self, row):
+        self.row = row
 
-        def set_y_point(self, y_point):
-            self.y_point = y_point
+    def set_column(self, column):
+        self.column = column
 
-        def get_row(self):
-            return self.row
+    def set_x_point(self, x_point):
+        self.x_point = x_point
 
-        def get_column(self):
-            return self.column
+    def set_y_point(self, y_point):
+        self.y_point = y_point
 
-        def get_x_point(self):
-            return self.x_point
+    def get_row(self):
+        return self.row
 
-        def get_y_point(self):
-            return self.y_point
+    def get_column(self):
+        return self.column
+
+    def get_x_point(self):
+        return self.x_point
+
+    def get_y_point(self):
+        return self.y_point
+
     def get_cordinates(self):
         return self.x_point, self.y_point
 

@@ -16,16 +16,16 @@ class MoveNode:
         children=None,
         parent=None,
     ):
-        self.piece = piece
-        self.from_tile = from_tile
-        self.to_tile = to_tile
-        self.killed = killed
+        self.piece = piece  # Piece that is moving
+        self.from_tile = from_tile  # Origin tile
+        self.to_tile = to_tile  # Destination tile
+        self.killed = killed  # Piece that was killed in this move
         self.promoted = promoted  # Flag to track if the move involved a promotion
-        self.children = children if children is not None else []
-        self.parent = parent
+        self.children = children if children is not None else []  # List of child nodes
+        self.parent = parent  # Parent node
 
     def add_child(self, child):
-        child.parent = self
+        child.set_parent(self)
         self.children.append(child)
 
     def __repr__(self):
