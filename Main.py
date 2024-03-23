@@ -386,20 +386,11 @@ def main():
 
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
 
-        # showing the last move with green glow
         if GAME_ONLINE and is_white_to_play == player_color or not GAME_ONLINE:
+            # showing the last move with green glow
             if len(board.get_history()) > 0:
                 last_move = board.get_history()[-1]
-                last_move_from_tile_x, last_move_from_tile_y = last_move[
-                    0
-                ].get_from_tile()
-                last_move_to_tile_x, last_move_to_tile_y = last_move[0].get_to_tile()
-                board.get_tile_from_location(
-                    last_move_from_tile_x, last_move_from_tile_y
-                ).glow(screen, Ecolors.green)
-                board.get_tile_from_location(
-                    last_move_to_tile_x, last_move_to_tile_y
-                ).glow(screen, Ecolors.green)
+                board.show_move(last_move[0], screen, True, "played move")
 
             # if the player's mouse if on a tile
             if mouse_on_tile:
@@ -408,33 +399,12 @@ def main():
                 if mouse_on_pawn and mouse_on_pawn.get_color() == (
                     Eplayers.white if is_white_to_play else Eplayers.black
                 ):
+                    # if the player's mouse is on a pawn, show the available moves
                     board.show_available_moves(
                         mouse_on_tile.get_location(), has_jumped, screen
                     )
 
-                # if the player clicked on a pawn
-                if (
-                    mouse_clicked
-                    and mouse_on_pawn
-                    and mouse_on_pawn.get_color()
-                    == (Eplayers.white if is_white_to_play else Eplayers.black)
-                ):
-                    (
-                        first_selection,
-                        is_white_to_play,
-                        has_jumped,
-                        before_move,
-                    ) = handle_mouse_click(
-                        board,
-                        mouse_on_tile,
-                        first_selection,
-                        is_white_to_play,
-                        has_jumped,
-                        before_move,
-                    )
-
-                # if the player clicked on an empty tile
-                elif mouse_clicked:
+                if mouse_clicked:
                     (
                         first_selection,
                         is_white_to_play,

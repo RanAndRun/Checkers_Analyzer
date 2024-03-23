@@ -127,20 +127,6 @@ class Board:
                 if pawn and pawn.is_alive():
                     self.pieces_matrix[tile_y][tile_x].draw(screen)
 
-    # def show_better_move(self, move: MoveNode, screen):
-    #     # draw on the board the move got in parameter
-    #     if move is None:
-    #         return
-
-    #     while move:
-    #         from_tile_x, from_tile_y = move.from_tile
-    #         to_tile_x, to_tile_y = move.to_tile
-
-    #         self.tiles[from_tile_y][from_tile_x].glow(screen, Ecolors.blue)
-    #         self.tiles[to_tile_y][to_tile_x].glow(screen, Ecolors.blue)
-
-    #         # Move to the next move in the sequence, if it exists
-    #         move = move.children[0] if move.children else None
 
     def show_move(
         self,
