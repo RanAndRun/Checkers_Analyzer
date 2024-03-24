@@ -4,7 +4,7 @@ from Enums import Eplayers
 from time import sleep
 import copy
 from BoardNode import BoardNode
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from config import DEPTH
 
 
@@ -52,7 +52,6 @@ class CheckersAI:
             return minEval
 
     def find_best_move(self, board):
-
         is_max = board.get_current_player() == Eplayers.white
         root_node = BoardNode(board)
         best_value = float("-inf") if is_max else float("inf")
@@ -83,14 +82,17 @@ class CheckersAI:
         return best_move, best_value
 
     def evaluate_and_compare_move(self, played_move: MoveNode, board: Board):
+        # input: MoveNode of the played move and the current board state
+        # output: the score of the played move, the score of the best move after the played move, and the best move after the played move
         copy_of_board = copy.deepcopy(board)
+        copy_of_board.apply_move(played_move)
+
         secend_copy_of_board = copy.deepcopy(board)
 
         # Temporarily apply the played move
         color_of_player = played_move.piece.color
         is_max = color_of_player == Eplayers.white
         # If the played move is white, the next move is black, and vice versa
-        copy_of_board.apply_move(played_move)
 
         # Create a BoardNode for the current board state after the move
 
@@ -121,6 +123,8 @@ class CheckersAI:
         return played_move_score, best_move_score, best_move
 
     def analyze_game(self, history, color):
+        # input: the history of the game and the color of the player to analyze
+        # output: the results of the analysis and the average score of the played moves
         analysis_results = []
         prev_score = 0
         sum_of_played_move_scores = 0
@@ -129,11 +133,8 @@ class CheckersAI:
         index = 0
         # Iterate over each move and corresponding board state
         for move, board in history:
-            print("move", index, "of", length)
+            print("move", index, "of", length)  # print the move that is being analyzed
             index += 1
-            move.piece = board.get_piece_at_tile(move.from_tile)
-            if move.killed is not None:
-                move.killed = board.get_piece_at_tile(move.killed.tile)
 
             # Skip if the move's piece color doesn't match the specified color
             if move.piece.color != color:
@@ -157,5 +158,6 @@ class CheckersAI:
             average_played_move_score = sum_of_played_move_scores / len(history)
             if color == Eplayers.white:
                 average_played_move_score = -average_played_move_score
+
         print("results", analysis_results)
         return analysis_results, average_played_move_score

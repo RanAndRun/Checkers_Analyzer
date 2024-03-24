@@ -37,7 +37,6 @@ def handle_mouse_click(
     has_jumped,
     before_move,
 ):
-    global game_over
     x, y = clicked_tile.get_location()
     if first_selection is None:
         # Select a piece if it belongs to the current player
@@ -431,14 +430,31 @@ def main():
                     if GAME_ONLINE:
                         network.close()
 
+        if game_over and not ask_for_name and not showing_graph:
+            # If the game is over and the user has not entered a name, show the game result
+            color = Eplayers.white if player_color else Eplayers.black
+            if board.get_winner() == color:
+                screen.blit(
+                    YOU_WIN,
+                    (
+                        WINDOW_SIZE / 2 - YOU_WIN.get_width() / 2,
+                        WINDOW_SIZE / 2 - YOU_WIN.get_height() / 2,
+                    ),
+                )
+            elif board.get_winner() != color:
+                screen.blit(
+                    YOU_LOSE,
+                    (
+                        WINDOW_SIZE / 2 - YOU_LOSE.get_width() / 2,
+                        WINDOW_SIZE / 2 - YOU_LOSE.get_height() / 2,
+                    ),
+                )
+
         if ask_for_name:
-            if GAME_ONLINE:
-                network.close()
-            color = (100, 100, 100)
             screen.blit(BACKROUND, (0, 0))
             font = pygame.font.Font(None, WINDOW_SIZE // 20)
 
-            txt_surface = font.render(text, True, color)
+            txt_surface = font.render(text, True, GREY)
 
             input_box_width = int(WINDOW_SIZE * 0.35)
             input_box_x = (WINDOW_SIZE - input_box_width) // 2
@@ -460,36 +476,12 @@ def main():
 
             pygame.display.flip()
 
-        if game_over and not ask_for_name and not showing_graph:
-            # If the game is over and the user has not entered a name, show the game result
-            color = Eplayers.white if player_color else Eplayers.black
-            if board.get_winner() == color:
-                screen.blit(
-                    YOU_WIN,
-                    (
-                        WINDOW_SIZE / 2 - YOU_WIN.get_width() / 2,
-                        WINDOW_SIZE / 2 - YOU_WIN.get_height() / 2,
-                    ),
-                )
-            elif board.get_winner() != color:
-                screen.blit(
-                    YOU_LOSE,
-                    (
-                        WINDOW_SIZE / 2 - YOU_LOSE.get_width() / 2,
-                        WINDOW_SIZE / 2 - YOU_LOSE.get_height() / 2,
-                    ),
-                )
-
         if analysis_started:
 
             history = board.get_history()
-            if player_color is not None:
-                color = Eplayers.white if player_color else Eplayers.black
-            else:
-                print("player color is None")
-                color = Eplayers.white
 
-            print("analyzing with player color", color)
+            color = Eplayers.white if player_color else Eplayers.black
+
             screen.blit(BACKROUND, (0, 0))
             please_wait_text = font.render("Analyzing... Please wait", True, BLACK)
             please_wait_text_y = int(WINDOW_SIZE * 0.07)
@@ -503,11 +495,7 @@ def main():
 
             winner = board.get_winner()
             print("winner1", winner)
-            if winner == None:
-                print("winner is none")
-                winner = board.is_game_over()
-            print("winner2", winner)
-
+            
             game_analysis, average_score = checkers_ai.analyze_game(history, color)
             print("average score", average_score)
 

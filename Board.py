@@ -646,7 +646,7 @@ class Board:
         return True
 
     def evaluate_board_score(self):
-        # Evaluate the board state and return a score for the current board
+        # Evaluate the board state and return an array for the current board
 
         #  Index 0: Number of pawns
         #  Index 1: Number of kings
