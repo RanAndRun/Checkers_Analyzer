@@ -5,7 +5,7 @@ from time import sleep
 import copy
 from BoardNode import BoardNode
 from concurrent.futures import ThreadPoolExecutor
-from config import DEPTH
+from Config import DEPTH
 
 
 class CheckersAI:

@@ -2,7 +2,7 @@ from Enums import *
 from Tile import *
 from time import sleep
 from pygame import display
-from config import *
+from Config import *
 
 
 class Piece:

@@ -1,6 +1,6 @@
 import socket
 
-from config import *
+from Config import *
 from time import sleep
 
 

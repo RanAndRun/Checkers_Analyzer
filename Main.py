@@ -10,7 +10,7 @@ from DBManager import DBManager
 from Enums import Eplayers, Ecolors
 from Network import Network
 from CheckersAI import CheckersAI
-from config import *
+from Config import *
 
 
 MOVE_LOCK = threading.Lock()
@@ -385,7 +385,13 @@ def main():
 
         mouse_on_tile = board.get_tile_at_pixel(mouse_x, mouse_y)
 
-        if GAME_ONLINE and is_white_to_play == player_color or not GAME_ONLINE:
+        if (
+            GAME_ONLINE
+            and is_white_to_play == player_color
+            and not game_over
+            or not GAME_ONLINE
+            and not game_over
+        ):
             # showing the last move with green glow
             if len(board.get_history()) > 0:
                 last_move = board.get_history()[-1]
@@ -426,6 +432,7 @@ def main():
 
                 # if the game is over, close the game
                 if board.is_game_over() is not None:
+                    pygame.display.update()
                     game_over = True
                     if GAME_ONLINE:
                         network.close()
@@ -495,7 +502,7 @@ def main():
 
             winner = board.get_winner()
             print("winner1", winner)
-            
+
             game_analysis, average_score = checkers_ai.analyze_game(history, color)
             print("average score", average_score)
 

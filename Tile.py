@@ -1,4 +1,4 @@
-from config import *
+from Config import *
 import pygame
 import os
 import copy

@@ -1,6 +1,6 @@
 import copy
 from Board import Board
-from config import BOARD_SIZE
+from Config import BOARD_SIZE
 from Enums import Eplayers
 
 

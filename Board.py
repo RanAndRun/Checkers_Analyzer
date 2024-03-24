@@ -4,7 +4,7 @@ from Tile import Tile
 from Pawn import Pawn
 from Enums import Eplayers, Ecolors
 from os import path
-from config import *
+from Config import *
 from King import King
 from Piece import Piece
 from MoveNode import MoveNode
