@@ -250,6 +250,7 @@ def receive_moves_forever(board, network):
 
 
 def get_graphs(matches, screen):
+    # create graphs for the win rate and game score
 
     player_data = {
         "wins": 0,
@@ -258,6 +259,7 @@ def get_graphs(matches, screen):
         "game_scores": [],
     }
     print("matches", matches)
+    # update the player data with the matches
     for name, game_index, win, game_score in matches:
         player_data["games"] += 1
         if win:
@@ -268,6 +270,7 @@ def get_graphs(matches, screen):
         player_data["game_scores"].append(game_score)
 
     def plot_graph(data_key, y_label, title):
+        # plot the graph
         fig, ax = plt.subplots()
         ax.plot(range(1, player_data["games"] + 1), player_data[data_key])
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
@@ -280,10 +283,12 @@ def get_graphs(matches, screen):
         buffer.seek(0)
         return buffer
 
+    # get the buffers for the graphs
     win_rate_buffer = plot_graph("win_rates", "Win Rate", "Win Rate Over Time")
     game_score_buffer = plot_graph("game_scores", "Game Score", "Game Score Over Time")
 
     def load_pygame_image(buffer):
+        # load the image to pygame
         image = pygame.image.load(buffer)
         rect = image.get_rect()
         image = pygame.transform.scale(image, SIZE)
