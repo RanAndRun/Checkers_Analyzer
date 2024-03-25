@@ -21,7 +21,7 @@ class DBManager:
         )
         self.conn.commit()
 
-    def add_player(self, name, won, score):
+    def add_game(self, name, won, score):
         try:
             # Check the current index for the player
             self.cursor.execute(
@@ -49,9 +49,3 @@ class DBManager:
         except sqlite3.Error as e:
             print(f"An error occurred: {e}")
             return []
-
-    def add_game(self, name, score):
-        self.add_player(name, True, score)
-
-    def close_connection(self):
-        self.conn.close()

@@ -2,10 +2,6 @@ import socket
 from Config import DISCONNECT_MSG, BUFFER_SIZE, SERVER_ADDRESS
 
 
-DISCONNECT_MSG = "DISCONNECT!"
-BUFFER_SIZE = 2048
-
-
 def start_server():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(SERVER_ADDRESS)
@@ -22,11 +18,14 @@ def start_server():
 
     players = [white_player_socket, black_player_socket]
 
+    # Set non-blocking mode
+    players[0].setblocking(False)
+    players[1].setblocking(False)
+
     connected = True
     while connected:
         for player_socket in players:
             try:
-                player_socket.setblocking(False)
                 msg = player_socket.recv(BUFFER_SIZE).decode()
                 if msg:
                     print("Message received:", msg)

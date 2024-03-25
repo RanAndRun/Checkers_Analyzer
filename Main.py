@@ -93,28 +93,36 @@ def handle_mouse_click(
 def display_analysis(screen, game_analysis, history, analysis_color):
     def handle_key_events():
         nonlocal move_index, display_state, mouse_clicked, mouse_x, mouse_y, analysis_board, show_explanation
-        global running
+        nonlocal running
         global EXPLAIN
         global QUESTION_MARK
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                # If the user closes the window, the game will close
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                running = False
+                # If the user presses escape, the game will end
                 return False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    move_index = max(-1, move_index - 1)
+                    # If the user presses the left arrow key, the game will go back one move
+
+                    move_index = max(
+                        -1, move_index - 1
+                    )  # Checks that we don't go beyond the first move
                     if len(history) > move_index:
                         analysis_board.undo_move()
                         analysis_board.undo_move()
 
                     display_state = "start"
                 elif event.key == pygame.K_RIGHT:
+                    # If the user presses the right arrow key, the game will go forward one move
 
                     if (
-                        move_index < len(history) - 1
+                        move_index
+                        < len(history)
+                        - 1  # Checks that we don't go beyond the last move
                     ):  # Checks that we don't go beyond the last move
                         move_index += 1
                         display_state = "start"
@@ -147,6 +155,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
         screen.fill((255, 255, 255))
         analysis_board.draw(screen)
         if not handle_key_events():
+            running = False
             break
 
         if move_index == -1:
@@ -158,6 +167,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
 
                 move_type = "played move"
 
+                # If the current move is the analysis color, show the best move
                 if current_move.get_piece().get_color() == analysis_color:
                     played_move, move_score, best_move_score, best_move = game_analysis[
                         int(move_index / 2)
@@ -172,6 +182,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                         move_type = "played move best"
 
                     move_to_show = played_move
+                # Current move is not the analysis color, show the move made
                 else:
                     best_move = None
                     analysis_board.apply_move(current_move, True)
@@ -179,12 +190,14 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     display_state = "played_move"
                     move_to_show = current_move
 
+            # Show the move that was made
             analysis_board.show_move(
                 move_to_show,
                 screen,
                 current_move.get_piece().get_color() == analysis_color,
                 "played move",
             )
+            # Show the best move if it is available
             if best_move:
                 analysis_board.show_move(
                     best_move,
@@ -192,9 +205,11 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     True,
                     move_type,
                 )
+        # Show the explanation if the user has clicked the question mark icon
         if show_explanation:
             screen.blit(EXPLAIN, (0, 0))
 
+        # update the screen
         screen.blit(QUESTION_MARK, question_mark_rect)
         pygame.display.update()
         FPS_CLOCK.tick(FPS)
@@ -234,41 +249,31 @@ def receive_moves_forever(board, network):
                 print(f"Error receiving move: {e}")
 
 
-def get_graphs(game_results):
-    global screen
-    if not isinstance(game_results, list) or not game_results:
-        pygame.quit()
-        sys.exit()
+def get_graphs(matches, screen):
 
-    # Dictionary to keep track of each player's wins, games, and cumulative win rate
-    players_data = {}
-
-    for name, game_index, win, game_score in game_results:
-        if name not in players_data:
-            players_data[name] = {
-                "wins": 0,
-                "games": 0,
-                "win_rates": [],
-                "game_scores": [],
-            }
-
-        players_data[name]["games"] += 1
+    player_data = {
+        "wins": 0,
+        "games": 0,
+        "win_rates": [],
+        "game_scores": [],
+    }
+    print("matches", matches)
+    for name, game_index, win, game_score in matches:
+        player_data["games"] += 1
         if win:
-            players_data[name]["wins"] += 1
+            player_data["wins"] += 1
 
-        current_win_rate = players_data[name]["wins"] / players_data[name]["games"]
-        players_data[name]["win_rates"].append(current_win_rate)
-        players_data[name]["game_scores"].append(game_score)
+        current_win_rate = player_data["wins"] / player_data["games"]
+        player_data["win_rates"].append(current_win_rate)
+        player_data["game_scores"].append(game_score)
 
     def plot_graph(data_key, y_label, title):
         fig, ax = plt.subplots()
-        for name, data in players_data.items():
-            ax.plot(range(1, len(data[data_key]) + 1), data[data_key], label=name)
+        ax.plot(range(1, player_data["games"] + 1), player_data[data_key])
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         ax.set_xlabel("Game Number")
         ax.set_ylabel(y_label)
         ax.set_title(title)
-        plt.legend()
         buffer = io.BytesIO()
         plt.savefig(buffer, format="png")
         plt.close(fig)
@@ -507,11 +512,11 @@ def main():
             print("average score", average_score)
 
             if winner == Eplayers.white:
-                DBM.add_player(text, True if player_color else False, average_score)
+                DBM.add_game(text, True if player_color else False, average_score)
             elif winner == Eplayers.black:
-                DBM.add_player(text, False if player_color else True, average_score)
+                DBM.add_game(text, False if player_color else True, average_score)
             elif winner == "draw":
-                DBM.add_player(text, None, average_score)
+                DBM.add_game(text, None, average_score)
 
             display_analysis(screen, game_analysis, history, color)
             analysis_started = False
@@ -522,7 +527,7 @@ def main():
                 print("getting matches for ", text)
                 matches = DBM.get_matches_for_name(text)
                 print("matches \n", matches)
-                graphs = get_graphs(matches)
+                graphs = get_graphs(matches, screen)
                 graph_created = True
             if show_first:
                 screen.blit(graphs[0][0], graphs[0][1])

@@ -7,10 +7,8 @@ from time import sleep
 class Network:
     def __init__(self, server_address=SERVER_ADDRESS):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_address = server_address
-        self.port = server_address[1]
         self.addr = server_address
-        self.is_white = None  # Initialize ID to None
+        self.is_white = None  # None until connection is established
 
     def connect(self):
         print("Connecting to server...", self.is_white)
