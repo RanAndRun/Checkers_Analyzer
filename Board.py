@@ -127,23 +127,22 @@ class Board:
                 if pawn and pawn.is_alive():
                     self.pieces_matrix[tile_y][tile_x].draw(screen)
 
-
     def show_move(
         self,
         move: MoveNode,
         screen,
         is_analyzing_player,
-        move_type,
+        display_state,
     ):
         if not move:
             return
 
         # Determine the color based on the player analyzing the move
-        if move_type == "played move best":
+        if display_state == "played_move_best":
             color = Ecolors.yellow
-        elif move_type == "played move":
+        elif display_state == "played_move":
             color = Ecolors.green if is_analyzing_player else Ecolors.red
-        elif move_type == "best move":
+        elif display_state == "best_move" or display_state == "show_best_move_sequence":
             color = Ecolors.blue
 
         # Iterate through the moves and their children to highlight tiles

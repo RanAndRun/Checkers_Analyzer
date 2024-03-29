@@ -22,72 +22,65 @@ class CheckersAI:
         score = sum([weight * score_tuple[i] for i, weight in enumerate(weights)])
         return score
 
-    def minimax(self, node, depth, alpha, beta, maximizingPlayer):
-        # input: BoardNode of the current board state, depth of the search tree, alpha, beta, and a boolean indicating if the current player is maximizing score or not
-        # output: the score of the best move for the current player
+    def minimax(self, node, depth, alpha, beta, maximizingPlayer, moves_list=[]):
         if depth == 0 or node.board.is_game_over():
-            return self.evaluate_board(node.board)
+            return moves_list, self.evaluate_board(node.board)
 
         if maximizingPlayer:
             maxEval = float("-inf")
+            best_sequence = None
             children = node.get_children()
             for child in children:
-                eval = self.minimax(child, depth - 1, alpha, beta, False)
-                maxEval = max(maxEval, eval)
+                sequence, eval = self.minimax(
+                    child, depth - 1, alpha, beta, False, moves_list + [child.move]
+                )
+                if eval > maxEval:
+                    maxEval = eval
+                    best_sequence = sequence
                 alpha = max(alpha, eval)
                 if beta <= alpha:
                     break  # Beta cut-off
-            node.value = maxEval
-            return maxEval
+            return best_sequence, maxEval
         else:
             minEval = float("inf")
+            best_sequence = None
             children = node.get_children()
             for child in children:
-                eval = self.minimax(child, depth - 1, alpha, beta, True)
-                minEval = min(minEval, eval)
+                sequence, eval = self.minimax(
+                    child, depth - 1, alpha, beta, True, moves_list + [child.move]
+                )
+                if eval < minEval:
+                    minEval = eval
+                    best_sequence = sequence
                 beta = min(beta, eval)
                 if beta <= alpha:
                     break  # Alpha cut-off
-            node.value = minEval
-            return minEval
+            return best_sequence, minEval
 
     def find_best_move(self, board):
         is_max = board.get_current_player() == Eplayers.white
         root_node = BoardNode(board)
-        best_value = float("-inf") if is_max else float("inf")
-        best_move = None
-        futures = []
 
         with ThreadPoolExecutor() as executor:
-            children = root_node.get_children()
-            for child in children:
-                future = executor.submit(
-                    self.minimax,
-                    child,
-                    DEPTH - 1,
-                    float("-inf"),
-                    float("inf"),
-                    not is_max,  # The next player is the opposite of the current player
-                )
-                futures.append((future, child.move))
+            best_move_score = executor.submit(
+                self.minimax,
+                root_node,
+                self.depth,
+                float("-inf"),
+                float("inf"),
+                is_max,
+            )
+            best_sequence, best_move_score = best_move_score.result()
 
-            for future, move in futures:
-                value = future.result()
-                if (is_max and value > best_value) or (
-                    not is_max and value < best_value
-                ):
-                    best_value = value
-                    best_move = move
-
-        return best_move, best_value
+        return best_sequence, best_move_score
 
     def evaluate_and_compare_move(self, played_move: MoveNode, board: Board):
         # input: MoveNode of the played move and the current board state
         # output: the score of the played move, the score of the best move after the played move, and the best move after the played move
-        copy_of_board = copy.deepcopy(board)
-        copy_of_board.apply_move(played_move)
+        copy_of_board_after_move = copy.deepcopy(board)
+        copy_of_board_after_move.apply_move(played_move)
 
-        secend_copy_of_board = copy.deepcopy(board)
+        copy_of_board_before_move = copy.deepcopy(board)
 
         # Temporarily apply the played move
         color_of_player = played_move.piece.color
@@ -96,31 +89,40 @@ class CheckersAI:
 
         # Create a BoardNode for the current board state after the move
 
-        board_after_move = BoardNode(copy_of_board)
+        board_node_after_move = BoardNode(copy_of_board_after_move)
 
         only_one_move = False
         if len(board.every_move_for_player(color_of_player)) == 1:
             only_one_move = True
             print("only one move")
 
+        # find the score of the played move
         with ThreadPoolExecutor() as executor:
             played_move_score = executor.submit(
                 self.minimax,
-                board_after_move,
+                board_node_after_move,
                 self.depth - 1,
                 float("-inf"),
                 float("inf"),
                 not is_max,
             )
-            played_move_score = played_move_score.result()
+            played_sequance, played_move_score = played_move_score.result()
 
+        # find the best move
         if only_one_move:
-            best_move = played_move
+            best_sequence = [played_move]
             best_move_score = played_move_score
         else:
-            best_move, best_move_score = self.find_best_move(secend_copy_of_board)
+            best_sequence, best_move_score = self.find_best_move(
+                copy_of_board_before_move
+            )
 
-        return played_move_score, best_move_score, best_move
+        return (
+            played_move_score,
+            best_move_score,
+            best_sequence,
+            [played_move] + played_sequance,
+        )
 
     def analyze_game(self, history, color):
         # input: the history of the game and the color of the player to analyze
@@ -141,15 +143,17 @@ class CheckersAI:
                 continue
 
             # Perform evaluation and comparison for the move
-            played_move_score, best_value, best_move = self.evaluate_and_compare_move(
-                move, board
+            played_move_score, best_value, best_sequence, played_sequance = (
+                self.evaluate_and_compare_move(move, board)
             )
 
             sum_of_played_move_scores += played_move_score - prev_score
             prev_score = played_move_score
             # Append the results to the analysis_results list
 
-            analysis_results.append((move, played_move_score, best_value, best_move))
+            analysis_results.append(
+                (move, played_move_score, best_value, best_sequence, played_sequance)
+            )
 
         # Calculate the average score of the played moves
         if len(history) == 0:

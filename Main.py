@@ -92,7 +92,7 @@ def handle_mouse_click(
 
 def display_analysis(screen, game_analysis, history, analysis_color):
     def handle_key_events():
-        nonlocal move_index, display_state, mouse_clicked, mouse_x, mouse_y, analysis_board, show_explanation
+        nonlocal move_index, display_state, mouse_clicked, mouse_x, mouse_y, analysis_board, show_explanation, sequence_index, is_add_to_sequence, move_to_show, move_type, best_move
         nonlocal running
         global EXPLAIN
         global QUESTION_MARK
@@ -126,6 +126,57 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     ):  # Checks that we don't go beyond the last move
                         move_index += 1
                         display_state = "start"
+                elif event.key == pygame.K_k:
+                    # If the user presses the 'j' key, the game will show the sequence of the played move
+                    if (
+                        display_state == "show_best_move_sequence"
+                        or current_move.get_piece().get_color() != analysis_color
+                    ):
+                        continue
+                    if display_state != "show_played_move_sequence":
+                        best_move = None
+                    display_state = "show_played_move_sequence"
+                    sequence_index += 1
+                    is_add_to_sequence = True
+                elif event.key == pygame.K_j:
+
+                    # If the user presses the 'l' key, the game will show the sequence of the played move
+
+                    if (
+                        display_state == "show_best_move_sequence"
+                        or current_move.get_piece().get_color() != analysis_color
+                    ):
+                        continue
+                    display_state = "show_played_move_sequence"
+                    sequence_index = max(0, sequence_index - 1)
+                    is_add_to_sequence = False
+
+                elif event.key == pygame.K_o:
+                    # If the user presses the 'o' key, the game will show the sequence of the best move
+                    print("display state", display_state)
+                    if (
+                        display_state == "show_played_move_sequence"
+                        or current_move.get_piece().get_color() != analysis_color
+                    ):
+                        continue
+
+                    if display_state != "show_best_move_sequence":
+                        move_to_show = None
+                        analysis_board.undo_move()
+                    display_state = "show_best_move_sequence"
+                    sequence_index += 1
+                    is_add_to_sequence = True
+                elif event.key == pygame.K_i:
+                    if (
+                        display_state == "show_played_move_sequence"
+                        or current_move.get_piece().get_color() != analysis_color
+                    ):
+                        continue
+                    # If the user presses the 'p' key, the game will show the sequence of the best move
+                    display_state = "show_best_move_sequence"
+                    sequence_index = max(0, sequence_index - 1)
+                    is_add_to_sequence = False
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 # Check if the click is within the rect of the question mark icon
                 if question_mark_rect.collidepoint(event.pos):
@@ -135,6 +186,8 @@ def display_analysis(screen, game_analysis, history, analysis_color):
     running = True
     analysis_board = Board(screen)  # Assuming this is your custom Board class
     move_index = -1
+    sequence_index = 0
+    is_add_to_sequence = None
     mouse_clicked, mouse_x, mouse_y, show_explanation = False, 0, 0, False
 
     question_mark_rect = QUESTION_MARK.get_rect()
@@ -164,22 +217,36 @@ def display_analysis(screen, game_analysis, history, analysis_color):
             current_move, _ = history[move_index]
 
             if display_state == "start":
+                if sequence_index > 0:
+                    for i in range(sequence_index):
+                        print("undoing move")
+                        analysis_board.undo_move()
+                    sequence_index = 0
 
-                move_type = "played move"
-
+                print("board", analysis_board)
+                print(current_move.get_piece().get_color())
                 # If the current move is the analysis color, show the best move
                 if current_move.get_piece().get_color() == analysis_color:
-                    played_move, move_score, best_move_score, best_move = game_analysis[
-                        int(move_index / 2)
-                    ]
+                    (
+                        played_move,
+                        move_score,
+                        best_move_score,
+                        best_sequence,
+                        played_sequance,
+                    ) = game_analysis[int(move_index / 2)]
+
+                    best_move = best_sequence[0]
+
+                    print("\n played sec", played_sequance, move_score)
+                    print("best sec", best_sequence, best_move_score)
+                    print("played move", played_move)
                     analysis_board.apply_move(played_move, True)
                     analysis_board.draw(screen)
 
                     display_state = "best_move"
-                    move_type = "best move"
 
-                    if best_move.__eq__(played_move):
-                        move_type = "played move best"
+                    if best_sequence[0].__eq__(played_move):
+                        display_state = "played_move_best"
 
                     move_to_show = played_move
                 # Current move is not the analysis color, show the move made
@@ -190,20 +257,78 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     display_state = "played_move"
                     move_to_show = current_move
 
+            elif display_state == "show_played_move_sequence":
+                print("index", sequence_index)
+
+                if sequence_index == len(played_sequance):
+                    display_state = "start"
+                    is_add_to_sequence = None
+                    continue
+                move_to_show = played_sequance[sequence_index]
+
+                if is_add_to_sequence is True:
+                    analysis_board.apply_move(move_to_show, True)
+                    is_add_to_sequence = None
+
+                elif is_add_to_sequence is False and sequence_index >= 0:
+                    print("board before undo", analysis_board)
+                    analysis_board.undo_move()
+                    print("board after undo", analysis_board)
+                    is_add_to_sequence = None
+                    if sequence_index == 0:
+                        analysis_board.undo_move()
+                        display_state = "start"
+                        continue
+
+                analysis_board.draw(screen)
+
+            elif display_state == "show_best_move_sequence":
+
+                if sequence_index == len(best_sequence) + 1:
+                    display_state = "start"
+                    continue
+
+                move = best_sequence[sequence_index - 1]
+                if move.get_piece().get_color() == analysis_color:
+                    best_move = move
+                else:
+                    best_move = None
+                    move_to_show = move
+
+                if is_add_to_sequence is True:
+                    analysis_board.apply_move(move, True)
+                    is_add_to_sequence = None
+
+                elif is_add_to_sequence is False and sequence_index >= 0:
+                    analysis_board.undo_move()
+                    is_add_to_sequence = None
+                    if sequence_index == 0:
+                        display_state = "start"
+                        continue
+                analysis_board.draw(screen)
+
             # Show the move that was made
-            analysis_board.show_move(
-                move_to_show,
-                screen,
-                current_move.get_piece().get_color() == analysis_color,
-                "played move",
-            )
+            if (
+                not (
+                    display_state == "show_best_move_sequence" and move_to_show is None
+                )
+                and display_state != "start"
+            ):
+                print("move to show", move_to_show)
+                print("display state", display_state)
+                analysis_board.show_move(
+                    move_to_show,
+                    screen,
+                    move_to_show.get_piece().get_color() == analysis_color,
+                    "played_move",
+                )
             # Show the best move if it is available
-            if best_move:
+            if best_move is not None and display_state != "start":
                 analysis_board.show_move(
                     best_move,
                     screen,
                     True,
-                    move_type,
+                    display_state,
                 )
         # Show the explanation if the user has clicked the question mark icon
         if show_explanation:
@@ -361,7 +486,9 @@ def main():
                 mouse_clicked = True
 
             elif event.type == pygame.KEYDOWN:
-
+                if event.key == pygame.K_x:
+                    best_move = checkers_ai.find_best_move(board)
+                    print("best move", best_move)
                 if event.key == pygame.K_KP_ENTER or event.key == pygame.K_RETURN:
                     # If the user presses enter or escape
 
@@ -405,7 +532,7 @@ def main():
             # showing the last move with green glow
             if len(board.get_history()) > 0:
                 last_move = board.get_history()[-1]
-                board.show_move(last_move[0], screen, True, "played move")
+                board.show_move(last_move[0], screen, True, "played_move")
 
             # if the player's mouse if on a tile
             if mouse_on_tile:
