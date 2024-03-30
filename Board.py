@@ -140,7 +140,10 @@ class Board:
         # Determine the color based on the player analyzing the move
         if display_state == "played_move_best":
             color = Ecolors.yellow
-        elif display_state == "played_move":
+        elif (
+            display_state == "played_move"
+            or display_state == "show_played_move_sequence"
+        ):
             color = Ecolors.green if is_analyzing_player else Ecolors.red
         elif display_state == "best_move" or display_state == "show_best_move_sequence":
             color = Ecolors.blue
