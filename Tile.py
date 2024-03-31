@@ -1,7 +1,5 @@
 from Config import *
 import pygame
-import os
-import copy
 from Enums import Ecolors
 
 

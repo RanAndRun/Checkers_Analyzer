@@ -57,46 +57,21 @@ class CheckersAI:
                     break  # Alpha cut-off
             return best_sequence, minEval
 
-    def find_best_move(self, board):
-        is_max = board.get_current_player() == Eplayers.white
-        root_node = BoardNode(board)
-
-        with ThreadPoolExecutor() as executor:
-            best_move_score = executor.submit(
-                self.minimax,
-                root_node,
-                self.depth,
-                float("-inf"),
-                float("inf"),
-                is_max,
-            )
-            best_sequence, best_move_score = best_move_score.result()
-
-        return best_sequence, best_move_score
-
     def evaluate_and_compare_move(self, played_move: MoveNode, board: Board):
         # input: MoveNode of the played move and the current board state
         # output: the score of the played move, the score of the best move after the played move, and the best move after the played move
+
+        # Create a copy of the board before and after the move
+
         copy_of_board_after_move = copy.deepcopy(board)
         copy_of_board_after_move.apply_move(played_move)
 
-        copy_of_board_before_move = copy.deepcopy(board)
-
-        # Temporarily apply the played move
+        # If the played move is white, the next move is black, and vice versa
         color_of_player = played_move.piece.color
         is_max = color_of_player == Eplayers.white
-        # If the played move is white, the next move is black, and vice versa
 
-        # Create a BoardNode for the current board state after the move
-
+        # find the played move sequence
         board_node_after_move = BoardNode(copy_of_board_after_move)
-
-        only_one_move = False
-        if len(board.every_move_for_player(color_of_player)) == 1:
-            only_one_move = True
-            print("only one move")
-
-        # find the score of the played move
         with ThreadPoolExecutor() as executor:
             played_move_score = executor.submit(
                 self.minimax,
@@ -108,14 +83,27 @@ class CheckersAI:
             )
             played_sequance, played_move_score = played_move_score.result()
 
-        # find the best move
+        only_one_move = len(board.every_move_for_player(color_of_player)) == 1
+
+        # if there is only one move, return the played move as the best move
         if only_one_move:
             best_sequence = [played_move]
             best_move_score = played_move_score
         else:
-            best_sequence, best_move_score = self.find_best_move(
-                copy_of_board_before_move
-            )
+            # find the best move sequence
+            copy_of_board_before_move = copy.deepcopy(board)
+            root_node = BoardNode(copy_of_board_before_move)
+
+            with ThreadPoolExecutor() as executor:
+                best_move_score = executor.submit(
+                    self.minimax,
+                    root_node,
+                    self.depth,
+                    float("-inf"),
+                    float("inf"),
+                    is_max,
+                )
+                best_sequence, best_move_score = best_move_score.result()
 
         return (
             played_move_score,

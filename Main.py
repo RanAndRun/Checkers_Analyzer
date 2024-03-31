@@ -92,45 +92,46 @@ def handle_mouse_click(
 
 def display_analysis(screen, game_analysis, history, analysis_color):
     def handle_key_events():
-        nonlocal move_index, display_state, mouse_clicked, mouse_x, mouse_y, analysis_board, show_explanation, sequence_index
-        nonlocal is_add_to_sequence, move_to_show, best_move, current_move, played_sequence, best_sequence, is_played_move_best
-        nonlocal running
-        global EXPLAIN
-        global QUESTION_MARK
+        nonlocal move_index, display_state, analysis_board, show_explanation, sequence_index
+        nonlocal is_add_to_sequence, move_to_show, best_move, current_move, is_played_move_best
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                # If the user closes the window, the game will close
+                # If the user closes the window, the program will close
                 pygame.quit()
                 sys.exit()
+
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                # If the user presses escape, the game will end
+                # If the user presses escape, the analyze screen will close
                 return False
+
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
                     # If the user presses the left arrow key, the game will go back one move
+                    if -1 <= move_index < len(history):
+                        if not (
+                            display_state == "show_played_move_sequence"
+                            or display_state == "show_best_move_sequence"
+                        ):
+                            move_index = max(-1, move_index - 1)
+                            analysis_board.undo_move()
+                            analysis_board.undo_move()
 
-                    move_index = max(
-                        -1, move_index - 1
-                    )  # Checks that we don't go beyond the first move
-                    if len(history) > move_index:
-                        analysis_board.undo_move()
-                        analysis_board.undo_move()
+                        display_state = "start"
 
-                    display_state = "start"
                 elif event.key == pygame.K_RIGHT:
                     # If the user presses the right arrow key, the game will go forward one move
-
                     if (
                         -1 <= move_index < len(history) - 1
                     ):  # Checks that we don't go beyond the last move
-                        print("display state", display_state)
-                        # if the user watches paths, dont go forward
+
+                        # if the user watches sequenses, dont change the move index
                         if not (
                             display_state == "show_best_move_sequence"
                             or display_state == "show_played_move_sequence"
                         ):
-                            print("applying move")
                             move_index += 1
+
                         if display_state == "show_played_move_sequence":
                             sequence_index += 1
 
@@ -235,10 +236,10 @@ def display_analysis(screen, game_analysis, history, analysis_color):
             current_move, _ = history[move_index]
 
             if display_state == "start":
-                print("sequence index", sequence_index)
+
+                # if sequence_index > 0, undo the moves to the start of the sequence
                 if sequence_index > 0:
                     for i in range(sequence_index):
-                        print("undoing move")
                         analysis_board.undo_move()
 
                 sequence_index = 0
@@ -275,6 +276,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
 
             elif display_state == "show_played_move_sequence":
                 if sequence_index == len(played_sequence):
+                    # If the sequence is over, go back to the start
                     display_state = "start"
                     is_add_to_sequence = None
                     continue
@@ -285,17 +287,10 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     analysis_board.apply_move(move_to_show, True)
                     is_add_to_sequence = None
 
-                elif is_add_to_sequence is False and sequence_index >= 0:
+                elif is_add_to_sequence is False and sequence_index > 0:
                     if sequence_index != 0:
                         is_add_to_sequence = None
                         analysis_board.undo_move()
-
-                    else:
-                        analysis_board.undo_move()
-                        analysis_board.undo_move()
-                        print(analysis_board)
-                        display_state = "start"
-                        continue
 
                 analysis_board.draw(screen)
 
@@ -317,7 +312,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                     analysis_board.apply_move(move, True)
                     is_add_to_sequence = None
 
-                elif is_add_to_sequence is False and sequence_index >= 0:
+                elif is_add_to_sequence is False and sequence_index > 0:
                     is_add_to_sequence = None
                     analysis_board.undo_move()
 
@@ -499,7 +494,6 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_x:
                     best_move = checkers_ai.find_best_move(board)
-                    print("best move", best_move)
                 if event.key == pygame.K_KP_ENTER or event.key == pygame.K_RETURN:
                     # If the user presses enter or escape
 
