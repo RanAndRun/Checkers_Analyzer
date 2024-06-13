@@ -73,6 +73,8 @@ def handle_mouse_click(
                     before_move = move
 
                 if not has_jumped or not board._has_more_jumps((x, y)):
+                    print("has jumped", has_jumped)
+                    print("has more jumps", board._has_more_jumps((x, y)))
                     is_white_to_play = not is_white_to_play
                     board.switch_player()
 

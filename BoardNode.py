@@ -12,7 +12,6 @@ class BoardNode:
         self.value = None
 
     def get_children(self):
-
         current_board = copy.deepcopy(self.board)
         children_states = []
         color = current_board.current_player

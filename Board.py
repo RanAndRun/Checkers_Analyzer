@@ -427,7 +427,7 @@ class Board:
                 has_jumped = piece
 
             if move.get_promoted() == True:
-                hashJumped = None
+                has_jumped = None
 
         # Check if the current piece has more jumps available
         if has_jumped and self._has_more_jumps(to_tile):
