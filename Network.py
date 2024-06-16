@@ -29,7 +29,6 @@ class Network:
             if self.is_white is not None:
                 # Convert data to string and encode
                 self.server.send(str(data).encode())
-                print("Data sent:", data)
         except socket.error as e:
             print("Problem sending data:", e)
 

@@ -73,14 +73,11 @@ def handle_mouse_click(
                     before_move = move
 
                 if not has_jumped or not board._has_more_jumps((x, y)):
-                    print("has jumped", has_jumped)
-                    print("has more jumps", board._has_more_jumps((x, y)))
                     is_white_to_play = not is_white_to_play
                     board.switch_player()
 
                     board.add_move_to_history(before_move)
                     if GAME_ONLINE:
-                        print("sending move", before_move)
                         simplified_move_node = Board.serialize_move_node(before_move)
                         network.send(simplified_move_node)
 
@@ -166,6 +163,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                             elif sequence_index == 1:
                                 analysis_board.undo_move()
                                 analysis_board.undo_move()
+                                sequence_index = 0
                                 display_state = "start"
                                 continue
                             sequence_index -= 1
@@ -235,7 +233,6 @@ def display_analysis(screen, game_analysis, history, analysis_color):
     best_move = None
 
     while running:
-        print(sequence_index)
         screen.fill((255, 255, 255))
         analysis_board.draw(screen)
         if not handle_key_events():
@@ -369,7 +366,6 @@ def receive_moves_forever(board, network):
                 msg = network.receive()
 
                 if msg:
-                    print("received move", player_color)
                     if msg == DISCONNECT_MSG:
                         print("Opponent has disconnected.")
                         if board.is_game_over() is None:
@@ -401,7 +397,6 @@ def get_graphs(matches, screen):
         "win_rates": [],
         "game_scores": [],
     }
-    print("matches", matches)
     # update the player data with the matches
     for name, game_index, win, game_score in matches:
         player_data["games"] += 1
