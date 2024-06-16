@@ -118,8 +118,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                             move_index = max(-1, move_index - 1)
                             analysis_board.undo_move()
                             analysis_board.undo_move()
-
-                        display_state = "start"
+                            display_state = "start"
 
                 elif event.key == pygame.K_RIGHT:
                     # If the user presses the right arrow key, the game will go forward one move
@@ -148,6 +147,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                         display_state != "show_best_move_sequence"
                         and move_index != -1
                         and current_move.get_piece().get_color() == analysis_color
+                        and not display_state == "played_move_best"
                     ):
                         best_move = None
                         if display_state == "played_move_best":
@@ -160,6 +160,11 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                         # If the user presses the O key, the game will show the previus move in the played move sequence
                         else:
                             if sequence_index == 0:
+                                analysis_board.undo_move()
+                                display_state = "start"
+                                continue
+                            elif sequence_index == 1:
+                                analysis_board.undo_move()
                                 analysis_board.undo_move()
                                 display_state = "start"
                                 continue
@@ -194,6 +199,10 @@ def display_analysis(screen, game_analysis, history, analysis_color):
                                 analysis_board.undo_move()
                                 display_state = "start"
                                 continue
+                            elif sequence_index == 1:
+                                # analysis_board.undo_move()
+                                display_state = "start"
+                                continue
                             sequence_index -= 1
                             is_add_to_sequence = False
                         display_state = "show_best_move_sequence"
@@ -226,6 +235,7 @@ def display_analysis(screen, game_analysis, history, analysis_color):
     best_move = None
 
     while running:
+        print(sequence_index)
         screen.fill((255, 255, 255))
         analysis_board.draw(screen)
         if not handle_key_events():
